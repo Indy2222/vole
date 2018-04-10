@@ -6,14 +6,22 @@ use std::process;
 use vole::{word, file};
 
 fn main() {
-    let mut args = env::args().skip(2);
-    let value_a: String = next_arg(&mut args);
-    let value_b: String = next_arg(&mut args);
+    let mut args = env::args().skip(1);
 
-    let word = word::Word::new(value_a, value_b);
+    let cmd = next_arg(&mut args);
 
-    if let Err(report) = file::add_one(&word) {
-        eprint!("{}\n", report);
+    if cmd == "add" {
+        let value_a: String = next_arg(&mut args);
+        let value_b: String = next_arg(&mut args);
+
+        let word = word::Word::new(value_a, value_b);
+
+        if let Err(report) = file::add_one(&word) {
+            eprint!("{}\n", report);
+            process::exit(1);
+        }
+    } else {
+        eprint!("Unrecognized argument: {}\n", cmd);
         process::exit(1);
     }
 }
