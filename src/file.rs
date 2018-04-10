@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, create_dir};
 use std::io::Write;
 use word::Word;
 
@@ -9,6 +9,13 @@ pub fn add_one(word: &Word) -> Result<(), &'static str> {
         None => return Err("Couldn't locate home directory.")
     };
     file_path.push(".vole");
+
+    if !file_path.exists() {
+        if let Err(_) = create_dir(&file_path) {
+            return Err("Couldn't create .vole directory in home directory.");
+        }
+    }
+
     file_path.push("dictionary.txt");
 
     let mut open_options = OpenOptions::new();
