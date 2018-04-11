@@ -21,4 +21,19 @@ impl Word {
         line.push_str("\n");
         line
     }
+
+    pub fn deserialize(line: &str) -> Result<Word, String> {
+        let parts: Vec<&str> = line.split('\t').collect();
+
+        if parts.len() != 2 {
+            return Err("Invalid number of TAB separated tokens.".to_string());
+        }
+
+        let variant_a: String = parts[0].to_string();
+        let variant_b: String = parts[1].to_string();
+        Ok(Word {
+            variant_a,
+            variant_b,
+        })
+    }
 }
