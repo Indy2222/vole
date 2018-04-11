@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::{File, OpenOptions, create_dir};
+use std::fs::{create_dir, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use word::Word;
@@ -11,8 +11,7 @@ pub fn add_one(word: &Word) -> Result<(), String> {
 
     if !file_path.exists() {
         if let Err(_) = create_dir(&file_path) {
-            return Err("Couldn't create .vole directory in home directory."
-                       .to_string());
+            return Err("Couldn't create .vole directory in home directory.".to_string());
         }
     }
 
@@ -22,12 +21,12 @@ pub fn add_one(word: &Word) -> Result<(), String> {
     open_options.append(true).create(true);
     let mut file = match open_options.open(file_path) {
         Ok(file) => file,
-        Err(_) => return Err("Couldn't open dictionary file.".to_string())
+        Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
 
     let line = word.serialize();
     if let Err(_) = file.write_all(line.as_bytes()) {
-        return Err("Couldn't write to dictionary file.".to_string())
+        return Err("Couldn't write to dictionary file.".to_string());
     }
 
     Ok(())
@@ -39,7 +38,7 @@ pub fn read_all() -> Result<Vec<Word>, String> {
 
     let file = match File::open(file_path) {
         Ok(file) => file,
-        Err(_) => return Err("Couldn't open dictionary file.".to_string())
+        Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
     let reader = BufReader::new(&file);
 
@@ -47,7 +46,7 @@ pub fn read_all() -> Result<Vec<Word>, String> {
     for (line_idx, line) in reader.lines().enumerate() {
         let line = match line {
             Ok(line) => line,
-            Err(_) => return Err("Couldn't read dictionary file.".to_string())
+            Err(_) => return Err("Couldn't read dictionary file.".to_string()),
         };
 
         let word: Word = match Word::deserialize(&line) {
@@ -66,7 +65,7 @@ pub fn read_all() -> Result<Vec<Word>, String> {
 fn get_vole_dir() -> Result<PathBuf, String> {
     let mut file_path = match env::home_dir() {
         Some(path) => path,
-        None => return Err("Couldn't locate home directory.".to_string())
+        None => return Err("Couldn't locate home directory.".to_string()),
     };
     file_path.push(".vole");
     Ok(file_path)

@@ -5,7 +5,10 @@ pub struct Word {
 
 impl Word {
     pub fn new(variant_a: String, variant_b: String) -> Word {
-        Word {variant_a, variant_b}
+        Word {
+            variant_a,
+            variant_b,
+        }
     }
 
     pub fn variants(&self) -> (&str, &str) {

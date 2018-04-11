@@ -5,7 +5,7 @@ use rand::{thread_rng, Rng};
 use std::env;
 use std::iter::Iterator;
 use std::process;
-use vole::{word, file};
+use vole::{file, word};
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -19,8 +19,9 @@ fn main() {
 }
 
 fn execute<T>(cmd: &str, mut args: T) -> Result<(), String>
-    where T: Iterator<Item = String> {
-
+where
+    T: Iterator<Item = String>,
+{
     if cmd == "add" {
         let value_a: String = next_arg(&mut args);
         let value_b: String = next_arg(&mut args);
