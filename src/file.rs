@@ -56,26 +56,39 @@ pub fn write_one(card: &Card) -> Result<(), String> {
     Ok(())
 }
 
-pub fn read_all() -> Result<Vec<Card>, String> {
+/// Load all cards from cards file and return it as vector.
+pub fn read_all_cards() -> Result<Vec<Card>, String> {
     let cards_file_path = get_cards_file_path()?;
 
-    let file = match File::open(cards_file_path) {
+    let file = match File::open(&cards_file_path) {
         Ok(file) => file,
-        Err(_) => return Err("Couldn't open dictionary file.".to_string()),
+        Err(error) => {
+            let reason = format!("Couldn't open file \"{}\": {}",
+                                 cards_file_path.to_string_lossy(), error);
+            return Err(reason);
+        }
     };
+
     let reader = BufReader::new(&file);
+    let numbered_lines = reader.lines().enumerate()
+        .map(|(line_idx, line_result)| (line_idx + 1, line_result));
 
     let mut cards: Vec<Card> = Vec::new();
-    for (line_idx, line) in reader.lines().enumerate() {
-        let line = match line {
+    for (line_number, line_result) in numbered_lines {
+        let line_string = match line_result {
             Ok(line) => line,
-            Err(_) => return Err("Couldn't read dictionary file.".to_string()),
+            Err(error) => {
+                let reason = format!("Couldn't read file \"{}\": {}",
+                                     cards_file_path.to_string_lossy(), error);
+                return Err(reason);
+            }
         };
 
-        let card: Card = match Card::from_line(&line) {
+        let card: Card = match Card::from_line(&line_string) {
             Ok(card) => card,
             Err(reason) => {
-                let reason = format!("Error on line {}: {}", line_idx + 1, reason);
+                let reason = format!("Error on line {}: {}", line_number,
+                                     reason);
                 return Err(reason);
             }
         };

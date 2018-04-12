@@ -29,7 +29,7 @@ where
         let card = card::Card::new(value_a, value_b);
         file::write_one(&card)?;
     } else if cmd == "rnd" {
-        let cards: Vec<card::Card> = file::read_all()?;
+        let cards: Vec<card::Card> = file::read_all_cards()?;
         let card_count: usize = cards.len();
 
         if card_count == 0 {
