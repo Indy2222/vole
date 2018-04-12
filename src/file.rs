@@ -31,19 +31,26 @@ impl Card {
     }
 }
 
-pub fn add_one(card: &Card) -> Result<(), String> {
+/// Append a `Card` into cards file. This opens cards wile in append mode and
+/// writes a single line to it.
+pub fn write_one(card: &Card) -> Result<(), String> {
     let cards_file_path = get_cards_file_path()?;
 
     let mut open_options = OpenOptions::new();
     open_options.append(true);
-    let mut file = match open_options.open(cards_file_path) {
+    let mut file = match open_options.open(&cards_file_path) {
         Ok(file) => file,
-        Err(_) => return Err("Couldn't open dictionary file.".to_string()),
+        Err(error) => {
+            let reason = format!("Couldn't open file \"{}\": {}",
+                                 cards_file_path.to_string_lossy(), error);
+            return Err(reason);
+        }
     };
 
-    let line = card.to_line();
-    if let Err(_) = file.write_all(line.as_bytes()) {
-        return Err("Couldn't write to dictionary file.".to_string());
+    if let Err(error) = file.write_all(card.to_line().as_bytes()) {
+        let reason = format!("Couldn't append to file \"{}\": {}",
+                             cards_file_path.to_string_lossy(), error);
+        return Err(reason);
     }
 
     Ok(())

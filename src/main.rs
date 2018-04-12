@@ -27,7 +27,7 @@ where
         let value_b: String = next_arg(&mut args);
 
         let card = card::Card::new(value_a, value_b);
-        file::add_one(&card)?;
+        file::write_one(&card)?;
     } else if cmd == "rnd" {
         let cards: Vec<card::Card> = file::read_all()?;
         let card_count: usize = cards.len();
