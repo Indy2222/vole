@@ -26,7 +26,7 @@ where
         let value_a: String = next_arg(&mut args);
         let value_b: String = next_arg(&mut args);
 
-        let card = card::Card::new(value_a, value_b);
+        let card = card::Card::with_random_id(value_a, value_b);
         file::write_one(&card)?;
     } else if cmd == "rnd" {
         let cards: Vec<card::Card> = file::read_all_cards()?;

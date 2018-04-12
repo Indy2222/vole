@@ -14,20 +14,23 @@ impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
     pub fn to_line(&self) -> String {
-        format!("{}\t{}\n", self.question(), self.answer())
+        format!("{}\t{}\t{}\n", self.id(), self.question(), self.answer())
     }
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
     pub fn from_line(line: &str) -> Result<Card, String> {
         let parts: Vec<&str> = line.split('\t').collect();
 
-        if parts.len() != 2 {
-            let reason = format!("Expected two TAB separated tokens, got: {}",
+        if parts.len() != 3 {
+            let reason = format!("Expected three TAB separated tokens, got: {}",
                                  line);
             return Err(reason);
         }
 
-        Ok(Card::new(parts[0].to_string(), parts[1].to_string()))
+        let id = parts[0].to_string();
+        let question = parts[1].to_string();
+        let answer = parts[2].to_string();
+        Ok(Card::new(id, question, answer))
     }
 }
 
