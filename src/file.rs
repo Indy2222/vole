@@ -4,22 +4,18 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use card::Card;
 
-static DICT_FILE_NAME: &'static str = "dictionary.txt";
+/// All VoLe files are place to a directory inside users home directory. This
+/// is name of the directory.
+const VOLE_DIR_NAME: &str = ".vole";
+/// File name of the file storing all cards.
+const CARDS_FILE_NAME: &str = "cards.txt";
 
 pub fn add_one(card: &Card) -> Result<(), String> {
-    let mut file_path = get_vole_dir()?;
-
-    if !file_path.exists() {
-        if let Err(_) = create_dir(&file_path) {
-            return Err("Couldn't create .vole directory in home directory.".to_string());
-        }
-    }
-
-    file_path.push(DICT_FILE_NAME);
+    let cards_file_path = get_cards_file_path()?;
 
     let mut open_options = OpenOptions::new();
-    open_options.append(true).create(true);
-    let mut file = match open_options.open(file_path) {
+    open_options.append(true);
+    let mut file = match open_options.open(cards_file_path) {
         Ok(file) => file,
         Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
@@ -33,10 +29,9 @@ pub fn add_one(card: &Card) -> Result<(), String> {
 }
 
 pub fn read_all() -> Result<Vec<Card>, String> {
-    let mut file_path = get_vole_dir()?;
-    file_path.push(DICT_FILE_NAME);
+    let cards_file_path = get_cards_file_path()?;
 
-    let file = match File::open(file_path) {
+    let file = match File::open(cards_file_path) {
         Ok(file) => file,
         Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
@@ -62,11 +57,35 @@ pub fn read_all() -> Result<Vec<Card>, String> {
     Ok(cards)
 }
 
-fn get_vole_dir() -> Result<PathBuf, String> {
+/// This returns path to use's card file and creates vole directory and card
+/// file along the way if necessary.
+///
+/// # Errors
+///
+/// In case of an I/O or other error a `String` with reason is returned.
+fn get_cards_file_path() -> Result<PathBuf, String> {
     let mut file_path = match env::home_dir() {
-        Some(path) => path,
+        Some(path_buf) => path_buf,
         None => return Err("Couldn't locate home directory.".to_string()),
     };
-    file_path.push(".vole");
+
+    file_path.push(&VOLE_DIR_NAME);
+    if !file_path.exists() {
+        if let Err(error) = create_dir(&file_path) {
+            let reason = format!("Couldn't create \"{}\" directory: {}",
+                                 file_path.to_string_lossy(), error);
+            return Err(reason);
+        }
+    }
+
+    file_path.push(&CARDS_FILE_NAME);
+    if !file_path.exists() {
+        if let Err(error) = File::create(&file_path) {
+            let reason = format!("Couldn't create \"{}\" file: {}",
+                                 file_path.to_string_lossy(), error);
+            return Err(reason);
+        }
+    }
+
     Ok(file_path)
 }
