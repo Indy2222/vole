@@ -5,7 +5,7 @@ use rand::{thread_rng, Rng};
 use std::env;
 use std::iter::Iterator;
 use std::process;
-use vole::{file, word};
+use vole::{file, card};
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -26,21 +26,21 @@ where
         let value_a: String = next_arg(&mut args);
         let value_b: String = next_arg(&mut args);
 
-        let word = word::Word::new(value_a, value_b);
-        file::add_one(&word)?;
+        let card = card::Card::new(value_a, value_b);
+        file::add_one(&card)?;
     } else if cmd == "rnd" {
-        let words: Vec<word::Word> = file::read_all()?;
-        let word_count: usize = words.len();
+        let cards: Vec<card::Card> = file::read_all()?;
+        let card_count: usize = cards.len();
 
-        if word_count == 0 {
+        if card_count == 0 {
             return Err("Dictionary is empty.".to_string());
         }
 
         let mut rng = thread_rng();
-        let word_index: usize = rng.gen_range(0, word_count);
-        let word: &word::Word = &words[word_index];
+        let card_index: usize = rng.gen_range(0, card_count);
+        let card: &card::Card = &cards[card_index];
 
-        let (variant_a, variant_b): (&str, &str) = word.variants();
+        let (variant_a, variant_b): (&str, &str) = card.variants();
         println!("{} | {}", variant_a, variant_b);
     } else {
         let err = format!("Unrecognized argument: {}", cmd);

@@ -1,2 +1,2 @@
-pub mod word;
+pub mod card;
 pub mod file;

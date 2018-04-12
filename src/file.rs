@@ -2,11 +2,11 @@ use std::env;
 use std::fs::{create_dir, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use word::Word;
+use card::Card;
 
 static DICT_FILE_NAME: &'static str = "dictionary.txt";
 
-pub fn add_one(word: &Word) -> Result<(), String> {
+pub fn add_one(card: &Card) -> Result<(), String> {
     let mut file_path = get_vole_dir()?;
 
     if !file_path.exists() {
@@ -24,7 +24,7 @@ pub fn add_one(word: &Word) -> Result<(), String> {
         Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
 
-    let line = word.serialize();
+    let line = card.serialize();
     if let Err(_) = file.write_all(line.as_bytes()) {
         return Err("Couldn't write to dictionary file.".to_string());
     }
@@ -32,7 +32,7 @@ pub fn add_one(word: &Word) -> Result<(), String> {
     Ok(())
 }
 
-pub fn read_all() -> Result<Vec<Word>, String> {
+pub fn read_all() -> Result<Vec<Card>, String> {
     let mut file_path = get_vole_dir()?;
     file_path.push(DICT_FILE_NAME);
 
@@ -42,24 +42,24 @@ pub fn read_all() -> Result<Vec<Word>, String> {
     };
     let reader = BufReader::new(&file);
 
-    let mut words: Vec<Word> = Vec::new();
+    let mut cards: Vec<Card> = Vec::new();
     for (line_idx, line) in reader.lines().enumerate() {
         let line = match line {
             Ok(line) => line,
             Err(_) => return Err("Couldn't read dictionary file.".to_string()),
         };
 
-        let word: Word = match Word::deserialize(&line) {
-            Ok(word) => word,
+        let card: Card = match Card::deserialize(&line) {
+            Ok(card) => card,
             Err(reason) => {
                 let reason = format!("Error on line {}: {}", line_idx + 1, reason);
                 return Err(reason);
             }
         };
-        words.push(word);
+        cards.push(card);
     }
 
-    Ok(words)
+    Ok(cards)
 }
 
 fn get_vole_dir() -> Result<PathBuf, String> {
