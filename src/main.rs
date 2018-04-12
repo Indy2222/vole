@@ -40,8 +40,7 @@ where
         let card_index: usize = rng.gen_range(0, card_count);
         let card: &card::Card = &cards[card_index];
 
-        let (variant_a, variant_b): (&str, &str) = card.variants();
-        println!("{} | {}", variant_a, variant_b);
+        println!("{} | {}", card.question(), card.answer());
     } else {
         let err = format!("Unrecognized argument: {}", cmd);
         return Err(err);

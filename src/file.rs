@@ -10,6 +10,27 @@ const VOLE_DIR_NAME: &str = ".vole";
 /// File name of the file storing all cards.
 const CARDS_FILE_NAME: &str = "cards.txt";
 
+impl Card {
+    /// Serialize `Card` to a `String` of a single line; with line-feed at the
+    /// end.
+    pub fn to_line(&self) -> String {
+        format!("{}\t{}\n", self.question(), self.answer())
+    }
+
+    /// Parse `Card` from a `&str` of a single line (ending with line-feed).
+    pub fn from_line(line: &str) -> Result<Card, String> {
+        let parts: Vec<&str> = line.split('\t').collect();
+
+        if parts.len() != 2 {
+            let reason = format!("Expected two TAB separated tokens, got: {}",
+                                 line);
+            return Err(reason);
+        }
+
+        Ok(Card::new(parts[0].to_string(), parts[1].to_string()))
+    }
+}
+
 pub fn add_one(card: &Card) -> Result<(), String> {
     let cards_file_path = get_cards_file_path()?;
 
@@ -20,7 +41,7 @@ pub fn add_one(card: &Card) -> Result<(), String> {
         Err(_) => return Err("Couldn't open dictionary file.".to_string()),
     };
 
-    let line = card.serialize();
+    let line = card.to_line();
     if let Err(_) = file.write_all(line.as_bytes()) {
         return Err("Couldn't write to dictionary file.".to_string());
     }
@@ -44,7 +65,7 @@ pub fn read_all() -> Result<Vec<Card>, String> {
             Err(_) => return Err("Couldn't read dictionary file.".to_string()),
         };
 
-        let card: Card = match Card::deserialize(&line) {
+        let card: Card = match Card::from_line(&line) {
             Ok(card) => card,
             Err(reason) => {
                 let reason = format!("Error on line {}: {}", line_idx + 1, reason);
