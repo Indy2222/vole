@@ -1,11 +1,10 @@
 extern crate rand;
 extern crate vole;
 
-use rand::{thread_rng, Rng};
 use std::env;
 use std::iter::Iterator;
 use std::process;
-use vole::{file, card};
+use vole::{file, card, learn};
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -28,19 +27,8 @@ where
 
         let card = card::Card::with_random_id(value_a, value_b);
         file::write_one(&card)?;
-    } else if cmd == "rnd" {
-        let cards: Vec<card::Card> = file::read_all_cards()?;
-        let card_count: usize = cards.len();
-
-        if card_count == 0 {
-            return Err("Dictionary is empty.".to_string());
-        }
-
-        let mut rng = thread_rng();
-        let card_index: usize = rng.gen_range(0, card_count);
-        let card: &card::Card = &cards[card_index];
-
-        println!("{} | {}", card.question(), card.answer());
+    } else if cmd == "learn" {
+        learn::learning_loop()?;
     } else {
         let err = format!("Unrecognized argument: {}", cmd);
         return Err(err);
