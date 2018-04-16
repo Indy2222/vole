@@ -18,6 +18,14 @@ fn main() {
         .arg(question_arg).arg(answer_arg);
     app = app.subcommand(add_sub_command);
 
+    let variant_a_arg = Arg::with_name("variant-a").required(true);
+    let variant_b_arg = Arg::with_name("variant-b").required(true);
+    let biadd_sub_command = SubCommand::with_name("biadd")
+        .about("Stores a card bidirectionally, i.e. two versions with answer \
+                and question swapped.")
+        .arg(variant_a_arg).arg(variant_b_arg);
+    app = app.subcommand(biadd_sub_command);
+
     let learn_sub_command = SubCommand::with_name("learn")
         .about("Starts question and answer learning loop.");
     app = app.subcommand(learn_sub_command);
@@ -31,11 +39,16 @@ fn main() {
 
 fn execute(matches: ArgMatches) -> Result<(), String> {
     if let Some(matches) = matches.subcommand_matches("add") {
-        let question = matches.value_of("question").unwrap().to_string();
-        let answer = matches.value_of("answer").unwrap().to_string();
-        let card = card::Card::with_random_id(question, answer);
-        file::write_one(&card)?;
-        return Ok(());
+        let question = matches.value_of("question").unwrap();
+        let answer = matches.value_of("answer").unwrap();
+        return add(question, answer);
+    }
+
+    if let Some(matches) = matches.subcommand_matches("biadd") {
+        let variant_a = matches.value_of("variant-a").unwrap();
+        let variant_b = matches.value_of("variant-b").unwrap();
+        add(variant_a, variant_b)?;
+        return add(variant_b, variant_a);
     }
 
     if let Some(_) = matches.subcommand_matches("learn") {
@@ -44,4 +57,10 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
     }
 
     panic!("Unrecognized command.")
+}
+
+fn add(question: &str, answer: &str) -> Result<(), String> {
+    let card = card::Card::with_random_id(
+        question.to_string(), answer.to_string());
+    file::write_one(&card)
 }
