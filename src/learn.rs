@@ -9,6 +9,24 @@ enum UserAction {
     Finish,
 }
 
+#[derive(Clone)]
+struct LoopOption {
+    letter: char,
+    doc: String,
+}
+
+
+impl CmdOption for LoopOption {
+    fn letter(&self) -> char {
+        self.letter
+    }
+
+    fn doc(&self) -> &str {
+        &self.doc
+    }
+}
+
+
 /// Start question answer loop. Questions, answers and options are printed to
 /// standard output and user commands are read from standard input. The loop
 /// continues until user enters end command.
@@ -35,22 +53,28 @@ fn iteration(cards: &Vec<Card>) -> UserAction {
 
     println!("Q: {}", card.question());
 
-    let yes = CmdOption::new('y', "yes");
-    let command = Command::new("Show answer", vec![yes]);
+    let yes = LoopOption {
+        letter:'y',
+        doc: "yes".to_string()
+    };
+    let command = Command::new("Show answer".to_string(), vec![yes.clone()]);
     read_option(&command);
 
     println!("A: {}", card.answer());
 
-    let yes = CmdOption::new('y', "yes");
-    let quit = CmdOption::new('q', "quit");
-    let command = Command::new("Continue with another card", vec![yes, quit]);
-    match *read_option(&command) {
+    let quit = LoopOption {
+        letter: 'q',
+        doc: "quit".to_string()
+    };
+    let command = Command::new("Continue with another card".to_string(),
+                               vec![yes, quit]);
+    match read_option(&command).letter() {
         'y' => UserAction::Continue,
         'q' => UserAction::Finish,
         _ => panic!("Unrecognized option."),
     }
 }
 
-fn read_option(command: &Command) -> &char {
-    prompt::prompt(&command).expect("Invalid option.").letter()
+fn read_option<T>(command: &Command<T>) -> &T where T: CmdOption {
+    prompt::prompt(&command).expect("Invalid option.")
 }

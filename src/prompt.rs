@@ -2,50 +2,36 @@ use std::io::{self, Write};
 
 const HELP_LETTER: char = '?';
 
-pub struct CmdOption {
-    letter: char,
-    doc: String,
+fn option_help(letter: char, doc: &str) -> String {
+    format!("{} - {}\n", letter, doc)
 }
 
-pub struct Command {
+pub trait CmdOption {
+    fn letter(&self) -> char;
+
+    fn doc(&self) -> &str;
+
+    fn help(&self) -> String {
+        option_help(self.letter(), self.doc())
+    }
+}
+
+pub struct Command<T> where T: CmdOption {
     question: String,
-    options: Vec<CmdOption>,
+    options: Vec<T>,
 }
 
-impl CmdOption {
-    pub fn new(letter: char, doc: &str) -> Self {
-        CmdOption {
-            letter: letter,
-            doc: doc.to_string(),
-        }
-    }
-
-    pub fn letter(&self) -> &char {
-        &self.letter
-    }
-
-    pub fn help(&self) -> String {
-        format!("{} - {}", self.letter, self.doc)
-    }
-}
-
-impl Command {
-    pub fn new(question: &str, options: Vec<CmdOption>) -> Self {
+impl<T> Command<T> where T: CmdOption {
+    /// # Panics
+    ///
+    /// When list of options is empty.
+    pub fn new(question: String, options: Vec<T>) -> Self {
         if options.is_empty() {
             panic!("Got empty list of options.");
         }
 
-        for option in options.iter() {
-            if *option.letter() == '?' {
-                panic!("Letter ? is not allowed.");
-            }
-        }
-
-        let mut options = options;
-        options.push(CmdOption::new(HELP_LETTER, "help"));
-
         Command {
-            question: question.to_string(),
+            question: question,
             options: options,
         }
     }
@@ -53,12 +39,11 @@ impl Command {
     fn prompt(&self) -> String {
         let mut prompt = String::from(&self.question[..]);
         prompt.push_str(" [");
-        for (i, option) in self.options.iter().enumerate() {
-            if i > 0 {
-                prompt.push_str(", ");
-            }
-            prompt.push(option.letter().clone());
+        for option in self.options.iter() {
+            prompt.push(option.letter());
+            prompt.push_str(", ");
         }
+        prompt.push(HELP_LETTER);
         prompt.push_str("]? ");
         prompt
     }
@@ -67,22 +52,37 @@ impl Command {
         let mut help = String::new();
         for option in self.options.iter() {
             help.push_str(&option.help());
-            help.push('\n');
         }
+        help.push_str(&option_help(HELP_LETTER, "help"));
         help
     }
 
-    fn parse(&self, input: &str) -> Result<&CmdOption, ()> {
-        let input = input.trim();
+    fn parse(&self, input: &str) -> ParsingResult<&T> {
+        let input: &str = input.trim();
+
+        if input.len() != 1 {
+            return ParsingResult::Err;
+        }
+        let input: char = input.chars().next().unwrap();
+
+        if HELP_LETTER == input {
+            return ParsingResult::Help;
+        }
 
         for option in self.options.iter() {
-            if option.letter().to_string() == input {
-                return Ok(&option);
+            if option.letter() == input {
+                return ParsingResult::Option(option);
             }
         }
 
-        Err(())
+        ParsingResult::Err
     }
+}
+
+enum ParsingResult<T> {
+    Help,
+    Option(T),
+    Err
 }
 
 /// Print question to standard output and read answer from standard input.
@@ -91,7 +91,7 @@ impl Command {
 /// # Errors
 ///
 /// User didn't give a valid answer.
-pub fn prompt(command: &Command) -> Result<&CmdOption, ()> {
+pub fn prompt<T>(command: &Command<T>) -> Result<&T, ()> where T: CmdOption {
     let mut attempts = 0;
     loop {
         let mut out = io::stdout();
@@ -102,11 +102,13 @@ pub fn prompt(command: &Command) -> Result<&CmdOption, ()> {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        if let Ok(option) = command.parse(&input) {
-            if *option.letter() == HELP_LETTER {
-                attempts -= 1;
-            } else {
+        match command.parse(&input) {
+            ParsingResult::Help => {},
+            ParsingResult::Option(option) => {
                 return Ok(option);
+            },
+            ParsingResult::Err => {
+                attempts += 1
             }
         }
 
@@ -116,8 +118,6 @@ pub fn prompt(command: &Command) -> Result<&CmdOption, ()> {
 
         out.write(command.help().as_bytes()).unwrap();
         out.flush().unwrap();
-
-        attempts += 1;
     }
 
     Err(())
