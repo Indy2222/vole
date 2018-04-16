@@ -6,13 +6,14 @@ use rand::{thread_rng, Rng};
 #[derive(PartialEq, Clone)]
 enum UserAction {
     Continue,
-    Finish,
+    Quit,
 }
 
 #[derive(Clone)]
 struct LoopOption {
     letter: char,
     doc: String,
+    action: UserAction,
 }
 
 
@@ -37,12 +38,9 @@ pub fn learning_loop() -> Result<(), String> {
         return Err("Card list is empty.".to_string());
     }
 
-    let mut next_action = UserAction::Continue;
-    while next_action != UserAction::Finish {
-        next_action = iteration(&cards);
-    }
+    while iteration(&cards) != UserAction::Quit {}
 
-    Ok(())
+    return Ok(())
 }
 
 fn iteration(cards: &Vec<Card>) -> UserAction {
@@ -51,30 +49,30 @@ fn iteration(cards: &Vec<Card>) -> UserAction {
     let card_index: usize = rng.gen_range(0, card_count);
     let card: &Card = &cards[card_index];
 
-    println!("Q: {}", card.question());
-
     let yes = LoopOption {
         letter:'y',
-        doc: "yes".to_string()
+        doc: "yes".to_string(),
+        action: UserAction::Continue,
     };
-    let command = Command::new("Show answer".to_string(), vec![yes.clone()]);
-    read_option(&command);
-
-    println!("A: {}", card.answer());
-
     let quit = LoopOption {
         letter: 'q',
-        doc: "quit".to_string()
+        doc: "quit".to_string(),
+        action: UserAction::Quit,
     };
-    let command = Command::new("Continue with another card".to_string(),
-                               vec![yes, quit]);
-    match read_option(&command).letter() {
-        'y' => UserAction::Continue,
-        'q' => UserAction::Finish,
-        _ => panic!("Unrecognized option."),
+    let options = vec![yes, quit];
+
+    println!("Q: {}", card.question());
+    let command = Command::new("Show answer".to_string(), options.clone());
+    if read_option(&command) == UserAction::Quit {
+        return UserAction::Quit;
     }
+
+    println!("A: {}", card.answer());
+    let command = Command::new("Continue with another card".to_string(),
+                               options);
+    read_option(&command)
 }
 
-fn read_option<T>(command: &Command<T>) -> &T where T: CmdOption {
-    prompt::prompt(&command).expect("Invalid option.")
+fn read_option(command: &Command<LoopOption>) -> UserAction {
+    prompt::prompt(&command).expect("Invalid option.").action.clone()
 }
