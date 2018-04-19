@@ -8,7 +8,12 @@
 //    http://www.supermemo.eu
 
 use chrono::{Duration, NaiveDate, prelude::*};
+use file::get_vole_dir;
 use std::collections::{HashMap, VecDeque};
+use std::fs::{rename, File};
+use std::io::{Write};
+
+const SCHEDULE_FILE_NAME: &str = "schedule.txt";
 
 struct ScheduleItem {
     iteration: u32,
@@ -43,6 +48,17 @@ impl Default for ScheduleItem {
 }
 
 impl ScheduleItem {
+    fn serialize(&self, id: &str) -> String {
+        let last_revisit = self.last_revisit.format("%Y-%m-%d");
+        let next_revisit = self.next_revisit.format("%Y-%m-%d");
+        format!("{id}\t{next_revisit}\t{last_revisit}\t{iteration}\t{ef}\n",
+                id=id,
+                next_revisit=next_revisit,
+                last_revisit=last_revisit,
+                iteration=self.iteration,
+                ef=self.ef)
+    }
+
     /// Returns number of days since last revisit.
     fn days_since(&self) -> u32 {
         let duration = self.last_revisit - today();
@@ -103,6 +119,44 @@ impl ScheduleItem {
 }
 
 impl Schedule {
+    /// Saves schedule to disc and overwrites schedule file if it already
+    /// exists.
+    pub fn save(&self) -> Result<(), String> {
+        let mut path = get_vole_dir()?;
+        let mut tmp_path = path.clone();
+        path.push(&SCHEDULE_FILE_NAME);
+        tmp_path.push(format!("{}.tmp", &SCHEDULE_FILE_NAME));
+
+        {
+            let mut file = match File::create(&tmp_path) {
+                Ok(file) => file,
+                Err(error) => {
+                    let reason = format!("Couldn't open file \"{}\": {}",
+                                         tmp_path.to_string_lossy(), error);
+                    return Err(reason);
+                }
+            };
+
+            for (id, item) in &self.items {
+                let line = item.serialize(id);
+                if let Err(error) = file.write_all(line.as_bytes()) {
+                    let reason = format!("Couldn't append to file \"{}\": {}",
+                                         tmp_path.to_string_lossy(), error);
+                    return Err(reason);
+                }
+            }
+        }
+
+        if let Err(error) = rename(&tmp_path, &path) {
+            let reason = format!("Couldn't rename \"{}\" to \"{}\": {}",
+                                 tmp_path.to_string_lossy(),
+                                 path.to_string_lossy(), error);
+            return Err(reason);
+        }
+
+        Ok(())
+    }
+
     /// Returns true if item with given ID is already tracked in the schedule.
     pub fn has_item(&self, id: &str) -> bool {
         self.items.contains_key(id)

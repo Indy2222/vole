@@ -111,6 +111,21 @@ pub fn read_cards() -> Result<CardsReader, String> {
 ///
 /// In case of an I/O or other error a `String` with reason is returned.
 fn get_cards_file_path() -> Result<PathBuf, String> {
+    let mut file_path = get_vole_dir()?;
+
+    file_path.push(&CARDS_FILE_NAME);
+    if !file_path.exists() {
+        if let Err(error) = File::create(&file_path) {
+            let reason = format!("Couldn't create \"{}\" file: {}",
+                                 file_path.to_string_lossy(), error);
+            return Err(reason);
+        }
+    }
+
+    Ok(file_path)
+}
+
+pub fn get_vole_dir() -> Result<PathBuf, String> {
     let mut file_path = match env::home_dir() {
         Some(path_buf) => path_buf,
         None => return Err("Couldn't locate home directory.".to_string()),
@@ -120,15 +135,6 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
     if !file_path.exists() {
         if let Err(error) = create_dir(&file_path) {
             let reason = format!("Couldn't create \"{}\" directory: {}",
-                                 file_path.to_string_lossy(), error);
-            return Err(reason);
-        }
-    }
-
-    file_path.push(&CARDS_FILE_NAME);
-    if !file_path.exists() {
-        if let Err(error) = File::create(&file_path) {
-            let reason = format!("Couldn't create \"{}\" file: {}",
                                  file_path.to_string_lossy(), error);
             return Err(reason);
         }
