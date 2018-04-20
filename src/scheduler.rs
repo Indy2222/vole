@@ -11,7 +11,7 @@ use chrono::{Duration, NaiveDate, prelude::*};
 use file::get_vole_dir;
 use std::collections::{HashMap, VecDeque};
 use std::fs::{rename, File};
-use std::io::{Write};
+use std::io::{Write, ErrorKind, BufReader, BufRead};
 
 const SCHEDULE_FILE_NAME: &str = "schedule.txt";
 
@@ -57,6 +57,50 @@ impl ScheduleItem {
                 last_revisit=last_revisit,
                 iteration=self.iteration,
                 ef=self.ef)
+    }
+
+    /// Parse `ScheduleItem` and its ID (hence the tuple) from a text line.
+    fn deserialize(line: &str) -> Result<(String, ScheduleItem), String> {
+        fn parse_date(source: &str) -> Result<NaiveDate, String> {
+            match NaiveDate::parse_from_str(source, "%Y-%m-%d") {
+                Ok(date) => Ok(date),
+                Err(reason) => Err(format!("Failed to parse date: {}", reason)),
+            }
+        }
+
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() != 5 {
+            let reason = format!("Expected five TAB separated tokens, got: {}",
+                                 line);
+            return Err(reason);
+        }
+
+        let id: String = parts[0].to_string();
+        let next_revisit: NaiveDate = parse_date(parts[1])?;
+        let last_revisit: NaiveDate = parse_date(parts[2])?;
+        let iteration: u32 = match parts[3].parse() {
+            Ok(iteration) => iteration,
+            Err(reason) => {
+                let msg = format!("Failed to parse iteration: {}", reason);
+                return Err(msg);
+            }
+        };
+        let ef: f32 = match parts[4].parse() {
+            Ok(ef) => ef,
+            Err(reason) => {
+                let msg = format!("Failed to parse EF: {}", reason);
+                return Err(msg);
+            }
+        };
+
+        let item = ScheduleItem {
+            iteration: iteration,
+            ef: ef,
+            last_revisit: last_revisit,
+            next_revisit: next_revisit,
+        };
+
+        Ok((id, item))
     }
 
     /// Returns number of days since last revisit.
@@ -118,7 +162,66 @@ impl ScheduleItem {
     }
 }
 
+impl Default for Schedule {
+    fn default() -> Schedule {
+        Schedule {
+            items: HashMap::new(),
+            stage: 0,
+            hot_stage: VecDeque::new(),
+            refresh_stage: VecDeque::new(),
+        }
+    }
+}
+
 impl Schedule {
+    pub fn load() -> Result<Schedule, String> {
+        let mut path = get_vole_dir()?;
+        path.push(&SCHEDULE_FILE_NAME);
+
+        let mut schedule: Schedule = Default::default();
+
+        let file = match File::open(&path) {
+            Ok(file) => file,
+            Err(error) => {
+                if let ErrorKind::NotFound = error.kind() {
+                    return Ok(schedule);
+                }
+                let reason = format!("Couldn't open file \"{}\": {}",
+                                     path.to_string_lossy(), error);
+                return Err(reason);
+            }
+        };
+
+        let reader = BufReader::new(&file);
+        let numbered_lines = reader.lines().enumerate()
+            .map(|(i, result)| (i + 1, result));
+
+        for (line_nr, result) in numbered_lines {
+            let line = match result {
+                Ok(line) => line,
+                Err(error) => {
+                    let reason = format!("Couldn't read file \"{}\": {}",
+                                         path.to_string_lossy(), error);
+                    return Err(reason);
+                }
+            };
+
+            let (id, item) = match ScheduleItem::deserialize(&line) {
+                Ok(parsed) => parsed,
+                Err(reason) => {
+                    let msg = format!("Error on line {}: {}", line_nr, reason);
+                    return Err(msg);
+                }
+            };
+            if item.next_revisit <= today() {
+                schedule.hot_stage.push_back(id.clone());
+            }
+            schedule.items.insert(id, item);
+        }
+
+        Ok(schedule)
+    }
+
     /// Saves schedule to disc and overwrites schedule file if it already
     /// exists.
     pub fn save(&self) -> Result<(), String> {
