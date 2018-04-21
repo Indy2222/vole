@@ -62,14 +62,13 @@ fn iteration(cards: &Vec<Card>) -> UserAction {
     let options = vec![yes, quit];
 
     println!("Q: {}", card.question());
-    let command = Command::new("Show answer".to_string(), options.clone());
+    let command = Command::new("Show answer", &options);
     if read_option(&command) == UserAction::Quit {
         return UserAction::Quit;
     }
 
     println!("A: {}", card.answer());
-    let command = Command::new("Continue with another card".to_string(),
-                               options);
+    let command = Command::new("Continue with another card", &options);
     read_option(&command)
 }
 
