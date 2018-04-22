@@ -1,5 +1,6 @@
 use std::env;
 use std::fs::{create_dir, File, OpenOptions};
+use std::iter::Iterator;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use card::Card;
@@ -19,7 +20,7 @@ impl Card {
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
     pub fn from_line(line: &str) -> Result<Card, String> {
-        let parts: Vec<&str> = line.split('\t').collect();
+        let parts: Vec<&str> = line.trim().split('\t').collect();
 
         if parts.len() != 3 {
             let reason = format!("Expected three TAB separated tokens, got: {}",
@@ -59,46 +60,48 @@ pub fn write_one(card: &Card) -> Result<(), String> {
     Ok(())
 }
 
-/// Load all cards from cards file and return it as vector.
-pub fn read_all_cards() -> Result<Vec<Card>, String> {
+pub struct CardsReader {
+    reader: BufReader<File>,
+    line_nr: usize,
+}
+
+impl Iterator for CardsReader {
+    type Item = Result<Card, String>;
+
+    fn next(&mut self) -> Option<Result<Card, String>> {
+        let mut line = String::new();
+
+        if let Err(error) = self.reader.read_line(&mut line) {
+            let result = Err(format!("Couldn't read card file: {}", error));
+            return Some(result);
+        }
+
+        if line.is_empty() {
+            return None;
+        }
+
+        self.line_nr += 1;
+
+        let result = Card::from_line(&line).map_err(|error| {
+            format!("Error on line {}: {}", self.line_nr, error)
+        });
+
+        Some(result)
+    }
+}
+
+/// Load cards gradually in form of an iterator from cards file.
+pub fn read_cards() -> Result<CardsReader, String> {
     let cards_file_path = get_cards_file_path()?;
 
-    let file = match File::open(&cards_file_path) {
-        Ok(file) => file,
-        Err(error) => {
-            let reason = format!("Couldn't open file \"{}\": {}",
-                                 cards_file_path.to_string_lossy(), error);
-            return Err(reason);
-        }
-    };
+    let file = File::open(&cards_file_path).map_err(|error| {
+        format!("Couldn't open card file: {}", error)
+    })?;
 
-    let reader = BufReader::new(&file);
-    let numbered_lines = reader.lines().enumerate()
-        .map(|(line_idx, line_result)| (line_idx + 1, line_result));
-
-    let mut cards: Vec<Card> = Vec::new();
-    for (line_number, line_result) in numbered_lines {
-        let line_string = match line_result {
-            Ok(line) => line,
-            Err(error) => {
-                let reason = format!("Couldn't read file \"{}\": {}",
-                                     cards_file_path.to_string_lossy(), error);
-                return Err(reason);
-            }
-        };
-
-        let card: Card = match Card::from_line(&line_string) {
-            Ok(card) => card,
-            Err(reason) => {
-                let reason = format!("Error on line {}: {}", line_number,
-                                     reason);
-                return Err(reason);
-            }
-        };
-        cards.push(card);
-    }
-
-    Ok(cards)
+    Ok(CardsReader {
+        reader: BufReader::new(file),
+        line_nr: 0,
+    })
 }
 
 /// This returns path to use's card file and creates vole directory and card

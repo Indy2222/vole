@@ -32,7 +32,8 @@ impl CmdOption for LoopOption {
 /// standard output and user commands are read from standard input. The loop
 /// continues until user enters end command.
 pub fn learning_loop() -> Result<(), String> {
-    let cards: Vec<Card> = file::read_all_cards()?;
+    let cards: Vec<Card> = file::read_cards()?
+        .collect::<Result<Vec<Card>, String>>()?;
 
     if cards.is_empty() {
         return Err("Card list is empty.".to_string());
