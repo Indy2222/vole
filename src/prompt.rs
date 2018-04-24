@@ -16,16 +16,16 @@ pub trait CmdOption {
     }
 }
 
-pub struct Command<T> where T: CmdOption {
-    question: String,
-    options: Vec<T>,
+pub struct Command<'a, T> where T: 'a + CmdOption {
+    question: &'a str,
+    options: &'a Vec<T>,
 }
 
-impl<T> Command<T> where T: CmdOption {
+impl<'a, T> Command<'a, T> where T: CmdOption {
     /// # Panics
     ///
     /// When list of options is empty.
-    pub fn new(question: String, options: Vec<T>) -> Self {
+    pub fn new(question: &'a str, options: &'a Vec<T>) -> Self {
         if options.is_empty() {
             panic!("Got empty list of options.");
         }
@@ -37,7 +37,7 @@ impl<T> Command<T> where T: CmdOption {
     }
 
     fn prompt(&self) -> String {
-        let mut prompt = String::from(&self.question[..]);
+        let mut prompt = String::from(self.question);
         prompt.push_str(" [");
         for option in self.options.iter() {
             prompt.push(option.letter());
@@ -91,7 +91,10 @@ enum ParsingResult<T> {
 /// # Errors
 ///
 /// User didn't give a valid answer.
-pub fn prompt<T>(command: &Command<T>) -> Result<&T, ()> where T: CmdOption {
+pub fn prompt<'a, T>(command: &'a Command<'a, T>) -> Result<&'a T, ()>
+where
+    T: CmdOption
+{
     let mut attempts = 0;
     loop {
         let mut out = io::stdout();
