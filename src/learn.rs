@@ -18,6 +18,7 @@
 use file::read_cards;
 use prompt::{self, Command, CmdOption};
 use qa::Qa;
+use std::io;
 
 #[derive(PartialEq, Clone)]
 enum UserAction {
@@ -27,21 +28,9 @@ enum UserAction {
 }
 
 #[derive(Clone)]
-struct LoopOption {
-    letter: char,
-    doc: String,
-    action: UserAction,
-}
-
-
-impl CmdOption for LoopOption {
-    fn letter(&self) -> char {
-        self.letter
-    }
-
-    fn doc(&self) -> &str {
-        &self.doc
-    }
+struct YesQuit {
+    Yes,
+    Quit
 }
 
 struct AssessmentOption {
@@ -49,22 +38,68 @@ struct AssessmentOption {
     doc: &'static str,
 }
 
-lazy_static! {
-    static ref ASSESSMENTS: Vec<AssessmentOption> = {
-        vec![
-            AssessmentOption {q: 0, doc: "complete blackout"},
-            AssessmentOption {q: 1, doc: "incorrect response; the correct one \
-                                          remembered"},
-            AssessmentOption {q: 2, doc: "incorrect response; where the \
-                                          correct one seemed easy to recall"},
-            AssessmentOption {q: 3, doc: "correct response recalled with \
-                                          serious difficulty"},
-            AssessmentOption {q: 4, doc: "correct response after a \
-                                          hesitation"},
-            AssessmentOption {q: 5, doc: "perfect response"},
-        ]
+
+static YES_NO: [LoopOption; ]
+
+static ASSESSMENTS: [AssessmentOption; 6] = [
+    AssessmentOption {
+        q: 0,
+        doc: "complete blackout"
+    },
+    AssessmentOption {
+        q: 1,
+        doc: "incorrect response; the correct one remembered"
+    },
+    AssessmentOption {
+        q: 2,
+        doc: "incorrect response; where the correct one seemed easy to recall"
+    },
+    AssessmentOption {
+        q: 3,
+        doc: "correct response recalled with serious difficulty"
+    },
+    AssessmentOption {
+        q: 4,
+        doc: "correct response after a hesitation"
+    },
+    AssessmentOption {
+        q: 5,
+        doc: "perfect response"
+    },
+];
+
+
+let yes = LoopOption {
+        letter:'y',
+        doc: "yes".to_string(),
+        action: UserAction::Continue,
     };
+    let quit = LoopOption {
+        letter: 'q',
+        doc: "quit".to_string(),
+        action: UserAction::Quit,
+    };
+    let options = vec![yes, quit];
+
+
+
+impl CmdOption for LoopOption {
+    fn letter(&self) -> char {
+        match self {
+            LoopOption::Yes => 'y',
+            LoopOption::Quit => 'q',
+        }
+    }
+
+    fn doc(&self) -> &str {
+        match self {
+            LoopOption::Yes => "yes",
+            LoopOption::Quit => "quit",
+        }
+    }
 }
+
+
 
 impl CmdOption for AssessmentOption {
     fn letter(&self) -> char {
@@ -109,34 +144,23 @@ fn read_option(command: &Command<LoopOption>) -> UserAction {
 }
 
 fn show_card(qa: &mut Qa) -> UserAction {
-    let yes = LoopOption {
-        letter:'y',
-        doc: "yes".to_string(),
-        action: UserAction::Continue,
-    };
-    let quit = LoopOption {
-        letter: 'q',
-        doc: "quit".to_string(),
-        action: UserAction::Quit,
-    };
-    let options = vec![yes, quit];
-
     {
         let card = qa.current_card();
         println!("Q: {}", card.question());
-        let command = Command::new("Show answer", &options);
-        if read_option(&command) == UserAction::Quit {
-            return UserAction::Quit;
+        {
+            // show answer after user presses RET
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).unwrap();
         }
-
         println!("A: {}", card.answer());
     }
 
-    let command = Command::new("How difficult was it", &*ASSESSMENTS);
+
+    let command = Command::new("How difficult was it", &ASSESSMENTS, None);
     let q = prompt::prompt(&command).expect("Invalid option.").q;
     qa.assess_current(q);
 
-    let command = Command::new("Continue with another card", &options);
+    let command = Command::new("Continue with another card", &options, Some(0));
     read_option(&command)
 }
 
@@ -159,7 +183,7 @@ fn ask_for_more(qa: &Qa) -> UserAction {
 
     let options = vec![yes, quit];
     let command = Command::new("No more items planned for today, add more",
-                               &options);
+                               &options, None);
     return read_option(&command);
 }
 

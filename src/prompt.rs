@@ -36,20 +36,32 @@ pub trait CmdOption {
 pub struct Command<'a, T> where T: 'a + CmdOption {
     question: &'a str,
     options: &'a Vec<T>,
+    default: Option<usize>,
 }
 
 impl<'a, T> Command<'a, T> where T: CmdOption {
     /// # Panics
     ///
-    /// When list of options is empty.
-    pub fn new(question: &'a str, options: &'a Vec<T>) -> Self {
+    ///  * When list of options is empty.
+    ///  * When `default`
+    pub fn new(
+        question: &'a str,
+        options: &'a Vec<T>,
+        default: Option<usize>
+    ) -> Self {
         if options.is_empty() {
             panic!("Got empty list of options.");
+        }
+        if let Some(index) = default {
+            if index > options.len() {
+                panic!("Default is not contained in list of options.");
+            }
         }
 
         Command {
             question: question,
             options: options,
+            default: default,
         }
     }
 
