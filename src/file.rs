@@ -32,7 +32,8 @@ impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
     pub fn to_line(&self) -> String {
-        format!("{}\t{}\t{}\n", self.id(), self.question(), self.answer())
+        let id = Card::serialize_id(self.id());
+        format!("{}\t{}\t{}\n", id, self.question(), self.answer())
     }
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
@@ -45,7 +46,7 @@ impl Card {
             return Err(reason);
         }
 
-        let id = parts[0].to_string();
+        let id: u64 = Card::parse_id(parts[0])?;
         let question = parts[1].to_string();
         let answer = parts[2].to_string();
         Ok(Card::new(id, question, answer))

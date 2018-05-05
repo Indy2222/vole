@@ -23,7 +23,7 @@ use std::collections::VecDeque;
 
 pub struct Qa {
     queued: VecDeque<Card>, // Cards yet to be scheduled
-    scheduled: FnvHashMap<String, Card>,
+    scheduled: FnvHashMap<u64, Card>,
     schedule: Schedule,
 }
 
@@ -52,7 +52,7 @@ impl Qa {
             let card: Card = card_result?;
 
             if qa.schedule.has_item(card.id()) {
-                qa.scheduled.insert(card.id().to_string(), card);
+                qa.scheduled.insert(card.id(), card);
             } else {
                 qa.queued.push_back(card);
             }
@@ -84,15 +84,15 @@ impl Qa {
                 None => break,
             };
 
-            self.schedule.add_item(card.id().to_string());
-            self.scheduled.insert(card.id().to_string(), card);
+            self.schedule.add_item(card.id());
+            self.scheduled.insert(card.id(), card);
         }
     }
 
     /// Get "current" card.
     pub fn current_card<'a>(&'a self) -> &'a Card {
         let item_id = self.schedule.current();
-        self.scheduled.get(item_id).unwrap()
+        self.scheduled.get(&item_id).unwrap()
     }
 
     /// Assess "easiness" of current card and move current the next one.
