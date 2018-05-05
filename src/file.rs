@@ -32,7 +32,8 @@ impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
     pub fn to_line(&self) -> String {
-        format!("{}\t{}\t{}\n", self.id(), self.question(), self.answer())
+        let id = Card::serialize_id(self.id());
+        format!("{}\t{}\t{}\n", id, self.question(), self.answer())
     }
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
@@ -45,7 +46,7 @@ impl Card {
             return Err(reason);
         }
 
-        let id = parts[0].to_string();
+        let id: u64 = Card::parse_id(parts[0])?;
         let question = parts[1].to_string();
         let answer = parts[2].to_string();
         Ok(Card::new(id, question, answer))
@@ -78,6 +79,7 @@ pub fn write_one(card: &Card) -> Result<(), String> {
 }
 
 pub struct CardsReader {
+    error: bool,
     reader: BufReader<File>,
     line_nr: usize,
 }
@@ -86,9 +88,14 @@ impl Iterator for CardsReader {
     type Item = Result<Card, String>;
 
     fn next(&mut self) -> Option<Result<Card, String>> {
+        if self.error {
+            return None;
+        }
+
         let mut line = String::new();
 
         if let Err(error) = self.reader.read_line(&mut line) {
+            self.error = true;
             let result = Err(format!("Couldn't read card file: {}", error));
             return Some(result);
         }
@@ -100,6 +107,7 @@ impl Iterator for CardsReader {
         self.line_nr += 1;
 
         let result = Card::from_line(&line).map_err(|error| {
+            self.error = true;
             format!("Error on line {}: {}", self.line_nr, error)
         });
 
@@ -116,6 +124,7 @@ pub fn read_cards() -> Result<CardsReader, String> {
     })?;
 
     Ok(CardsReader {
+        error: false,
         reader: BufReader::new(file),
         line_nr: 0,
     })

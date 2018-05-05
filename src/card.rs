@@ -15,16 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use rand::{thread_rng, Rng};
-
 pub struct Card {
-    id: String,
+    id: u64,
     question: String,
     answer: String,
 }
 
 impl Card {
-    pub fn new(id: String, question: String, answer: String) -> Card {
+    pub fn parse_id(id: &str) -> Result<u64, String> {
+        u64::from_str_radix(id, 16)
+            .map_err(|r| format!("Failed to parse ID: {}", r))
+    }
+
+    pub fn serialize_id(id: u64) -> String {
+        format!("{:016x}", id)
+    }
+
+    pub fn new(id: u64, question: String, answer: String) -> Card {
         Card {
             id,
             question,
@@ -32,25 +39,8 @@ impl Card {
         }
     }
 
-    pub fn with_random_id(question: String, answer: String) -> Card {
-        let consonants = b"abcdfghjklmnpqrstvwxyz";
-        let mut id = String::new();
-
-        let mut rng = thread_rng();
-        for _i in 0..20 {
-            let random_char = rng.choose(consonants).cloned().unwrap().into();
-            id.push(random_char);
-        }
-
-        Card {
-            id,
-            question,
-            answer,
-        }
-    }
-
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     pub fn question(&self) -> &str {

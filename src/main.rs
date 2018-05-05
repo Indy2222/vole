@@ -77,7 +77,14 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
 }
 
 fn add(question: &str, answer: &str) -> Result<(), String> {
-    let card = card::Card::with_random_id(
-        question.to_string(), answer.to_string());
+    let reader = file::read_cards()?;
+    let id: u64 = match reader.last() {
+        Some(Ok(card)) => card.id() + 1,
+        Some(Err(error)) => return Err(error),
+        None => 0,
+    };
+
+    let card = card::Card::new(
+        id, question.to_string(), answer.to_string());
     file::write_one(&card)
 }

@@ -25,9 +25,11 @@
 //    http://www.supermemo.com
 //    http://www.supermemo.eu
 
+use card::Card;
 use chrono::{Duration, NaiveDate, prelude::*};
 use file::get_vole_dir;
-use std::collections::{HashMap, VecDeque};
+use fnv::FnvHashMap;
+use std::collections::VecDeque;
 use std::fs::{rename, File};
 use std::io::{Write, ErrorKind, BufReader, BufRead};
 
@@ -41,10 +43,10 @@ struct ScheduleItem {
 }
 
 pub struct Schedule {
-    items: HashMap<String, ScheduleItem>,
+    items: FnvHashMap<u64, ScheduleItem>,
     stage: usize,
-    hot_stage: VecDeque<String>,
-    refresh_stage: VecDeque<String>,
+    hot_stage: VecDeque<u64>,
+    refresh_stage: VecDeque<u64>,
 }
 
 fn today() -> NaiveDate {
@@ -66,11 +68,11 @@ impl Default for ScheduleItem {
 }
 
 impl ScheduleItem {
-    fn serialize(&self, id: &str) -> String {
+    fn serialize(&self, id: u64) -> String {
         let last_revisit = self.last_revisit.format("%Y-%m-%d");
         let next_revisit = self.next_revisit.format("%Y-%m-%d");
         format!("{id}\t{next_revisit}\t{last_revisit}\t{iteration}\t{ef}\n",
-                id=id,
+                id=Card::serialize_id(id),
                 next_revisit=next_revisit,
                 last_revisit=last_revisit,
                 iteration=self.iteration,
@@ -78,7 +80,7 @@ impl ScheduleItem {
     }
 
     /// Parse `ScheduleItem` and its ID (hence the tuple) from a text line.
-    fn deserialize(line: &str) -> Result<(String, ScheduleItem), String> {
+    fn deserialize(line: &str) -> Result<(u64, ScheduleItem), String> {
         fn parse_date(source: &str) -> Result<NaiveDate, String> {
             match NaiveDate::parse_from_str(source, "%Y-%m-%d") {
                 Ok(date) => Ok(date),
@@ -93,7 +95,7 @@ impl ScheduleItem {
             return Err(reason);
         }
 
-        let id: String = parts[0].to_string();
+        let id: u64 = Card::parse_id(parts[0])?;
         let next_revisit: NaiveDate = parse_date(parts[1])?;
         let last_revisit: NaiveDate = parse_date(parts[2])?;
         let iteration: u32 = match parts[3].parse() {
@@ -183,7 +185,7 @@ impl ScheduleItem {
 impl Default for Schedule {
     fn default() -> Schedule {
         Schedule {
-            items: HashMap::new(),
+            items: FnvHashMap::default(),
             stage: 0,
             hot_stage: VecDeque::new(),
             refresh_stage: VecDeque::new(),
@@ -232,7 +234,7 @@ impl Schedule {
                 }
             };
             if item.next_revisit <= today() {
-                schedule.hot_stage.push_back(id.clone());
+                schedule.hot_stage.push_back(id);
             }
             schedule.items.insert(id, item);
         }
@@ -259,7 +261,7 @@ impl Schedule {
             };
 
             for (id, item) in &self.items {
-                let line = item.serialize(id);
+                let line = item.serialize(*id);
                 if let Err(error) = file.write_all(line.as_bytes()) {
                     let reason = format!("Couldn't append to file \"{}\": {}",
                                          tmp_path.to_string_lossy(), error);
@@ -279,8 +281,8 @@ impl Schedule {
     }
 
     /// Returns true if item with given ID is already tracked in the schedule.
-    pub fn has_item(&self, id: &str) -> bool {
-        self.items.contains_key(id)
+    pub fn has_item(&self, id: u64) -> bool {
+        self.items.contains_key(&id)
     }
 
     /// Creates a new freshly initialized item to be learned.
@@ -289,8 +291,8 @@ impl Schedule {
     ///
     /// This method panics if the added item has been already added in the
     /// past.
-    pub fn add_item(&mut self, id: String) {
-        if self.has_item(&id) {
+    pub fn add_item(&mut self, id: u64) {
+        if self.has_item(id) {
             panic!("Item with ID {} is already scheduled.", id);
         }
 
@@ -307,7 +309,7 @@ impl Schedule {
 
     /// Provides ID of the next item to be displayed and assessed. Call
     /// `self.update_current()` after the item is asses by the user.
-    pub fn current<'a>(&'a self) -> &'a str {
+    pub fn current(&self) -> u64 {
         if self.is_done() {
             panic!("No scheduled items.");
         }
@@ -318,7 +320,7 @@ impl Schedule {
             &self.refresh_stage
         };
 
-        current_stage.front().unwrap()
+        *current_stage.front().unwrap()
     }
 
     /// Asses first item in the queue of items to be assessed and move to the
