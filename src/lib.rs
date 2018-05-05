@@ -16,6 +16,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 extern crate chrono;
+extern crate fnv;
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;

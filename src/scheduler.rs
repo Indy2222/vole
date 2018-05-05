@@ -27,7 +27,8 @@
 
 use chrono::{Duration, NaiveDate, prelude::*};
 use file::get_vole_dir;
-use std::collections::{HashMap, VecDeque};
+use fnv::FnvHashMap;
+use std::collections::VecDeque;
 use std::fs::{rename, File};
 use std::io::{Write, ErrorKind, BufReader, BufRead};
 
@@ -41,7 +42,7 @@ struct ScheduleItem {
 }
 
 pub struct Schedule {
-    items: HashMap<String, ScheduleItem>,
+    items: FnvHashMap<String, ScheduleItem>,
     stage: usize,
     hot_stage: VecDeque<String>,
     refresh_stage: VecDeque<String>,
@@ -183,7 +184,7 @@ impl ScheduleItem {
 impl Default for Schedule {
     fn default() -> Schedule {
         Schedule {
-            items: HashMap::new(),
+            items: FnvHashMap::default(),
             stage: 0,
             hot_stage: VecDeque::new(),
             refresh_stage: VecDeque::new(),

@@ -17,12 +17,13 @@
 
 use card::Card;
 use file::CardsReader;
+use fnv::FnvHashMap;
 use scheduler::Schedule;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 pub struct Qa {
     queued: VecDeque<Card>, // Cards yet to be scheduled
-    scheduled: HashMap<String, Card>,
+    scheduled: FnvHashMap<String, Card>,
     schedule: Schedule,
 }
 
@@ -43,7 +44,7 @@ impl Qa {
 
         let mut qa = Qa {
             queued: VecDeque::new(),
-            scheduled: HashMap::new(),
+            scheduled: FnvHashMap::default(),
             schedule: schedule,
         };
 
