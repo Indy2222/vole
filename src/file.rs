@@ -78,6 +78,7 @@ pub fn write_one(card: &Card) -> Result<(), String> {
 }
 
 pub struct CardsReader {
+    error: bool,
     reader: BufReader<File>,
     line_nr: usize,
 }
@@ -86,9 +87,14 @@ impl Iterator for CardsReader {
     type Item = Result<Card, String>;
 
     fn next(&mut self) -> Option<Result<Card, String>> {
+        if self.error {
+            return None;
+        }
+
         let mut line = String::new();
 
         if let Err(error) = self.reader.read_line(&mut line) {
+            self.error = true;
             let result = Err(format!("Couldn't read card file: {}", error));
             return Some(result);
         }
@@ -100,6 +106,7 @@ impl Iterator for CardsReader {
         self.line_nr += 1;
 
         let result = Card::from_line(&line).map_err(|error| {
+            self.error = true;
             format!("Error on line {}: {}", self.line_nr, error)
         });
 
@@ -116,6 +123,7 @@ pub fn read_cards() -> Result<CardsReader, String> {
     })?;
 
     Ok(CardsReader {
+        error: false,
         reader: BufReader::new(file),
         line_nr: 0,
     })
