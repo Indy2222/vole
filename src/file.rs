@@ -18,7 +18,7 @@
 use crate::card::Card;
 use dirs;
 use std::fs::{create_dir, File, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::iter::Iterator;
 use std::path::PathBuf;
 
@@ -52,15 +52,15 @@ impl Card {
     }
 }
 
-/// Append a `Card` into cards file. This opens cards wile in append mode and
-/// writes a single line to it.
-pub fn write_one(card: &Card) -> Result<(), String> {
+/// Append a slice `Card`-s into cards file. This opens cards wile in append
+/// mode and writes at the end of it.
+pub fn store_cards(cards: &[Card]) -> Result<(), String> {
     let cards_file_path = get_cards_file_path()?;
 
     let mut open_options = OpenOptions::new();
     open_options.append(true);
-    let mut file = match open_options.open(&cards_file_path) {
-        Ok(file) => file,
+    let mut writer = match open_options.open(&cards_file_path) {
+        Ok(file) => BufWriter::new(file),
         Err(error) => {
             let reason = format!(
                 "Couldn't open file \"{}\": {}",
@@ -71,13 +71,23 @@ pub fn write_one(card: &Card) -> Result<(), String> {
         }
     };
 
-    if let Err(error) = file.write_all(card.to_line().as_bytes()) {
-        let reason = format!(
+    for card in cards {
+        if let Err(error) = writer.write_all(card.to_line().as_bytes()) {
+            let reason = format!(
+                "Couldn't append to file \"{}\": {}",
+                cards_file_path.to_string_lossy(),
+                error
+            );
+            return Err(reason);
+        }
+    }
+
+    if let Err(why) = writer.flush() {
+        return Err(format!(
             "Couldn't append to file \"{}\": {}",
             cards_file_path.to_string_lossy(),
-            error
-        );
-        return Err(reason);
+            why
+        ));
     }
 
     Ok(())

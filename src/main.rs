@@ -21,7 +21,7 @@ extern crate vole;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
-use vole::{card, file, learn};
+use vole::{card::Card, file, learn};
 
 fn main() {
     let mut app = App::new("VoLe")
@@ -63,14 +63,13 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
     if let Some(matches) = matches.subcommand_matches("add") {
         let question = matches.value_of("question").unwrap();
         let answer = matches.value_of("answer").unwrap();
-        return add(question, answer);
+        return add(&[(question, answer)]);
     }
 
     if let Some(matches) = matches.subcommand_matches("biadd") {
         let variant_a = matches.value_of("variant-a").unwrap();
         let variant_b = matches.value_of("variant-b").unwrap();
-        add(variant_a, variant_b)?;
-        return add(variant_b, variant_a);
+        return add(&[(variant_a, variant_b), (variant_b, variant_a)]);
     }
 
     if matches.subcommand_matches("learn").is_some() {
@@ -81,14 +80,20 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
     panic!("Unrecognized command.")
 }
 
-fn add(question: &str, answer: &str) -> Result<(), String> {
+fn add(qa: &[(&str, &str)]) -> Result<(), String> {
     let reader = file::read_cards()?;
-    let id: u64 = match reader.last() {
-        Some(Ok(card)) => card.id() + 1,
+    let last_id: u64 = match reader.last() {
+        Some(Ok(card)) => card.id(),
         Some(Err(error)) => return Err(error),
         None => 0,
     };
 
-    let card = card::Card::new(id, question.to_string(), answer.to_string());
-    file::write_one(&card)
+    let cards: Vec<Card> = qa
+        .iter()
+        .scan(last_id, |last_id, &(q, a)| {
+            *last_id += 1;
+            Some(Card::new(*last_id, String::from(q), String::from(a)))
+        })
+        .collect();
+    file::store_cards(&cards)
 }
