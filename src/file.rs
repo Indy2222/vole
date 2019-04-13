@@ -16,7 +16,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 use crate::card::Card;
-use std::env;
+use dirs;
 use std::fs::{create_dir, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::iter::Iterator;
@@ -159,7 +159,7 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
 }
 
 pub fn get_vole_dir() -> Result<PathBuf, String> {
-    let mut file_path = match env::home_dir() {
+    let mut file_path = match dirs::home_dir() {
         Some(path_buf) => path_buf,
         None => return Err("Couldn't locate home directory.".to_string()),
     };
