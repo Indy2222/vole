@@ -31,13 +31,13 @@ const CARDS_FILE_NAME: &str = "cards.txt";
 impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
-    pub fn to_line(&self) -> String {
+    fn to_line(&self) -> String {
         let id = Card::serialize_id(self.id());
         format!("{}\t{}\t{}\n", id, self.question(), self.answer())
     }
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
-    pub fn from_line(line: &str) -> Result<Card, String> {
+    fn from_line(line: &str) -> Result<Card, String> {
         let parts: Vec<&str> = line.trim().split('\t').collect();
 
         if parts.len() != 3 {
