@@ -122,7 +122,7 @@ where
     loop {
         let mut out = io::stdout();
 
-        out.write(command.prompt().as_bytes()).unwrap();
+        out.write_all(command.prompt().as_bytes()).unwrap();
         out.flush().unwrap();
 
         let mut input = String::new();
@@ -140,7 +140,7 @@ where
             break;
         }
 
-        out.write(command.help().as_bytes()).unwrap();
+        out.write_all(command.help().as_bytes()).unwrap();
         out.flush().unwrap();
     }
 
