@@ -2,6 +2,7 @@
 name = "vole"
 version = "0.1.0"
 authors = ["Martin Indra"]
+edition = "2018"
 
 [dependencies]
 rand = "0.4"

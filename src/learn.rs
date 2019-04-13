@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use file::read_cards;
-use prompt::{self, Command, CmdOption};
-use qa::Qa;
+use crate::file::read_cards;
+use crate::prompt::{self, CmdOption, Command};
+use crate::qa::Qa;
 
 #[derive(PartialEq, Clone)]
 enum UserAction {

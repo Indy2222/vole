@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use card::Card;
-use file::CardsReader;
+use crate::card::Card;
+use crate::file::CardsReader;
+use crate::scheduler::Schedule;
 use fnv::FnvHashMap;
-use scheduler::Schedule;
 use std::collections::VecDeque;
 
 pub struct Qa {

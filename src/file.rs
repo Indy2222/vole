@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+use crate::card::Card;
 use std::env;
 use std::fs::{create_dir, File, OpenOptions};
-use std::iter::Iterator;
 use std::io::{BufRead, BufReader, Write};
+use std::iter::Iterator;
 use std::path::PathBuf;
-use card::Card;
 
 /// All VoLe files are place to a directory inside users home directory. This
 /// is name of the directory.

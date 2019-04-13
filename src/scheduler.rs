@@ -1,4 +1,4 @@
-// Source Code, Copyright (C) 2018  Martin Indra
+// Source Code, Copyright (C) 2018, 2019  Martin Indra
 // Algorithm SM-2, (C) Copyright SuperMemo World, 1991.
 //
 // This file is part of VoLe.
@@ -25,9 +25,9 @@
 //    http://www.supermemo.com
 //    http://www.supermemo.eu
 
-use card::Card;
-use chrono::{Duration, NaiveDate, prelude::*};
-use file::get_vole_dir;
+use crate::card::Card;
+use crate::file::get_vole_dir;
+use chrono::{prelude::*, Duration, NaiveDate};
 use fnv::FnvHashMap;
 use std::collections::VecDeque;
 use std::fs::{rename, File};
