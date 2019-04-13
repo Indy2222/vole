@@ -158,6 +158,9 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
     Ok(file_path)
 }
 
+/// Get directory where VoLe configuration and other files are stored (possible
+/// deeper in the hierarchy). This function creates the directory if it doesn't
+/// exist.
 pub fn get_vole_dir() -> Result<PathBuf, String> {
     let mut file_path = match dirs::home_dir() {
         Some(path_buf) => path_buf,

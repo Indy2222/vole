@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+/// The core struct of VoLe representing a unit of learning or a so-called
+/// flash-card.
 pub struct Card {
     id: u64,
     question: String,
@@ -22,10 +24,12 @@ pub struct Card {
 }
 
 impl Card {
+    /// Parse ID of a `Card` from a HEX string.
     pub fn parse_id(id: &str) -> Result<u64, String> {
         u64::from_str_radix(id, 16).map_err(|r| format!("Failed to parse card ID: {}", r))
     }
 
+    /// Serialize ID of a `Card` to a HEX string.
     pub fn serialize_id(id: u64) -> String {
         format!("{:016x}", id)
     }
