@@ -1,2 +1,11 @@
 language: rust
 cache: cargo
+install:
+  - cargo build --verbose
+  - rustup component add rustfmt clippy-preview
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+  - cargo fmt --all -- --check
+  # https://github.com/rust-lang/rust/issues/59909
+  # - cargo clippy -- -D warnings
