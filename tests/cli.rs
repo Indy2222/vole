@@ -42,7 +42,13 @@ fn test_biadd() {
     let second: String = thread_rng().sample_iter(&Alphanumeric).take(30).collect();
 
     let mut cmd = Command::cargo_bin("vole").unwrap();
-    let output = cmd.arg("biadd").arg(&first).arg(&second).output().unwrap();
+    let output = cmd
+        .arg("add")
+        .arg("-b")
+        .arg(&first)
+        .arg(&second)
+        .output()
+        .unwrap();
 
     assert!(output.status.success());
     assert_eq!(output.stderr.len(), 0);

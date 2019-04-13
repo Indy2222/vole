@@ -33,17 +33,17 @@ fn main() {
         .subcommand(
             SubCommand::with_name("add")
                 .about("Stores a new flashcard.")
+                .arg(
+                    Arg::with_name("bidir")
+                        .long("bidirectional")
+                        .short("b")
+                        .help(
+                            "Stores a card bidirectionally, id est two \
+                             versions with answer and question swapped.",
+                        ),
+                )
                 .arg(Arg::with_name("question").required(true))
                 .arg(Arg::with_name("answer").required(true)),
-        )
-        .subcommand(
-            SubCommand::with_name("biadd")
-                .about(
-                    "Stores a card bidirectionally, i.e. two versions with \
-                     answer and question swapped.",
-                )
-                .arg(Arg::with_name("variant-a").required(true))
-                .arg(Arg::with_name("variant-b").required(true)),
         )
         .subcommand(
             SubCommand::with_name("learn").about("Starts question and answer learning loop."),
@@ -60,13 +60,12 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
     if let Some(matches) = matches.subcommand_matches("add") {
         let question = matches.value_of("question").unwrap();
         let answer = matches.value_of("answer").unwrap();
-        return add(&[(question, answer)]);
-    }
 
-    if let Some(matches) = matches.subcommand_matches("biadd") {
-        let variant_a = matches.value_of("variant-a").unwrap();
-        let variant_b = matches.value_of("variant-b").unwrap();
-        return add(&[(variant_a, variant_b), (variant_b, variant_a)]);
+        return if matches.is_present("bidir") {
+            add(&[(question, answer), (answer, question)])
+        } else {
+            add(&[(question, answer)])
+        };
     }
 
     matches.subcommand_matches("learn").unwrap();
