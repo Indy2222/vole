@@ -20,6 +20,7 @@ extern crate rand;
 extern crate vole;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use regex::{self, Regex};
 use std::process;
 use vole::{card::Card, file, learn};
 
@@ -47,6 +48,21 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("learn").about("Starts question and answer learning loop."),
+        )
+        .subcommand(
+            SubCommand::with_name("find")
+                .about(
+                    "Searches all questions and answers with a regular \
+                     expression and prints all matching cards.",
+                )
+                .arg(
+                    Arg::with_name("regex")
+                        .help(
+                            "A matching regular expression with syntax \
+                             documented at https://docs.rs/regex/1/regex/#syntax",
+                        )
+                        .required(true),
+                ),
         );
 
     let matches = app.get_matches();
@@ -68,8 +84,34 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
         };
     }
 
+    if let Some(matches) = matches.subcommand_matches("find") {
+        let regexp = matches.value_of("regex").unwrap();
+        return find(regexp);
+    }
+
     matches.subcommand_matches("learn").unwrap();
     learn::learning_loop()?;
+    Ok(())
+}
+
+fn find(regex: &str) -> Result<(), String> {
+    let regex = match Regex::new(regex) {
+        Ok(regex) => regex,
+        Err(why) => return Err(format!("Invalid regex: {}", why)),
+    };
+
+    let reader = file::read_cards()?;
+    for card in reader {
+        let card = match card {
+            Ok(card) => card,
+            Err(why) => return Err(why),
+        };
+        if !regex.is_match(card.question()) && !regex.is_match(card.answer()) {
+            continue;
+        }
+        print!("{}", card.to_line());
+    }
+
     Ok(())
 }
 
