@@ -19,38 +19,35 @@ extern crate clap;
 extern crate rand;
 extern crate vole;
 
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use std::process;
 use vole::{card::Card, file, learn};
 
 fn main() {
-    let mut app = App::new("VoLe")
+    let app = App::new("VoLe")
         .version("0.1.0")
         .author("Martin Indra <martin.indra@mgn.cz>")
-        .about("CLI for flashcard learning");
-
-    let question_arg = Arg::with_name("question").required(true);
-    let answer_arg = Arg::with_name("answer").required(true);
-    let add_sub_command = SubCommand::with_name("add")
-        .about("Stores a new flashcard.")
-        .arg(question_arg)
-        .arg(answer_arg);
-    app = app.subcommand(add_sub_command);
-
-    let variant_a_arg = Arg::with_name("variant-a").required(true);
-    let variant_b_arg = Arg::with_name("variant-b").required(true);
-    let biadd_sub_command = SubCommand::with_name("biadd")
-        .about(
-            "Stores a card bidirectionally, i.e. two versions with answer \
-             and question swapped.",
+        .about("CLI for flashcard learning")
+        .setting(AppSettings::SubcommandRequired)
+        .setting(AppSettings::VersionlessSubcommands)
+        .subcommand(
+            SubCommand::with_name("add")
+                .about("Stores a new flashcard.")
+                .arg(Arg::with_name("question").required(true))
+                .arg(Arg::with_name("answer").required(true)),
         )
-        .arg(variant_a_arg)
-        .arg(variant_b_arg);
-    app = app.subcommand(biadd_sub_command);
-
-    let learn_sub_command =
-        SubCommand::with_name("learn").about("Starts question and answer learning loop.");
-    app = app.subcommand(learn_sub_command);
+        .subcommand(
+            SubCommand::with_name("biadd")
+                .about(
+                    "Stores a card bidirectionally, i.e. two versions with \
+                     answer and question swapped.",
+                )
+                .arg(Arg::with_name("variant-a").required(true))
+                .arg(Arg::with_name("variant-b").required(true)),
+        )
+        .subcommand(
+            SubCommand::with_name("learn").about("Starts question and answer learning loop."),
+        );
 
     let matches = app.get_matches();
     if let Err(report) = execute(matches) {
@@ -72,12 +69,9 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
         return add(&[(variant_a, variant_b), (variant_b, variant_a)]);
     }
 
-    if matches.subcommand_matches("learn").is_some() {
-        learn::learning_loop()?;
-        return Ok(());
-    }
-
-    panic!("Unrecognized command.")
+    matches.subcommand_matches("learn").unwrap();
+    learn::learning_loop()?;
+    Ok(())
 }
 
 fn add(qa: &[(&str, &str)]) -> Result<(), String> {
