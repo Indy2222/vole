@@ -44,7 +44,7 @@ impl Qa {
         let mut qa = Qa {
             queued: VecDeque::new(),
             scheduled: FnvHashMap::default(),
-            schedule: schedule,
+            schedule,
         };
 
         for card_result in reader {
@@ -72,7 +72,7 @@ impl Qa {
 
     /// Returns true if there is at least one card not yet scheduled.
     pub fn is_all_scheduled(&self) -> bool {
-        return self.queued.is_empty();
+        self.queued.is_empty()
     }
 
     /// Schedule `count` new cards for learning.
@@ -89,9 +89,9 @@ impl Qa {
     }
 
     /// Get "current" card.
-    pub fn current_card<'a>(&'a self) -> &'a Card {
+    pub fn current_card(&self) -> &Card {
         let item_id = self.schedule.current();
-        self.scheduled.get(&item_id).unwrap()
+        &self.scheduled[&item_id]
     }
 
     /// Assess "easiness" of current card and move current the next one.

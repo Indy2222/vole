@@ -115,10 +115,10 @@ impl ScheduleItem {
         };
 
         let item = ScheduleItem {
-            iteration: iteration,
-            ef: ef,
-            last_revisit: last_revisit,
-            next_revisit: next_revisit,
+            iteration,
+            ef,
+            last_revisit,
+            next_revisit,
         };
 
         Ok((id, item))
@@ -141,7 +141,7 @@ impl ScheduleItem {
 
     /// Schedule `self` n days to the future.
     fn reschedule(&mut self, days: u32) {
-        self.next_revisit = today() + Duration::days(days as i64);
+        self.next_revisit = today() + Duration::days(i64::from(days));
     }
 
     /// Recompute easiness factor based on user assessed easiness (0 - 5).
@@ -150,7 +150,7 @@ impl ScheduleItem {
             panic!("Invalid easiness assessment: {}.", q);
         }
 
-        let q = q as f32;
+        let q = f32::from(q);
         self.ef = self.ef - 0.8 + 0.28 * q - 0.02 * q * q;
         if self.ef < 1.3 {
             self.ef = 1.3;
@@ -314,7 +314,7 @@ impl Schedule {
             panic!("Item with ID {} is already scheduled.", id);
         }
 
-        self.hot_stage.push_back(id.clone());
+        self.hot_stage.push_back(id);
         let item: ScheduleItem = Default::default();
         self.items.insert(id, item);
     }

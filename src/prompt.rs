@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -38,7 +38,7 @@ where
     T: 'a + CmdOption,
 {
     question: &'a str,
-    options: &'a Vec<T>,
+    options: &'a [T],
 }
 
 impl<'a, T> Command<'a, T>
@@ -48,15 +48,12 @@ where
     /// # Panics
     ///
     /// When list of options is empty.
-    pub fn new(question: &'a str, options: &'a Vec<T>) -> Self {
+    pub fn new(question: &'a str, options: &'a [T]) -> Self {
         if options.is_empty() {
             panic!("Got empty list of options.");
         }
 
-        Command {
-            question: question,
-            options: options,
-        }
+        Command { question, options }
     }
 
     fn prompt(&self) -> String {

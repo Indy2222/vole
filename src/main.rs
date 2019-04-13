@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -73,7 +73,7 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
         return add(variant_b, variant_a);
     }
 
-    if let Some(_) = matches.subcommand_matches("learn") {
+    if matches.subcommand_matches("learn").is_some() {
         learn::learning_loop()?;
         return Ok(());
     }

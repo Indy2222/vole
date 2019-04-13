@@ -109,7 +109,7 @@ pub fn learning_loop() -> Result<(), String> {
     }
 
     qa.save()?;
-    return Ok(());
+    Ok(())
 }
 
 fn iteration(qa: &mut Qa) -> UserAction {
@@ -178,5 +178,5 @@ fn ask_for_more(qa: &Qa) -> UserAction {
 
     let options = vec![yes, quit];
     let command = Command::new("No more items planned for today, add more", &options);
-    return read_option(&command);
+    read_option(&command)
 }
