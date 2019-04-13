@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -33,24 +33,27 @@ pub trait CmdOption {
     }
 }
 
-pub struct Command<'a, T> where T: 'a + CmdOption {
+pub struct Command<'a, T>
+where
+    T: 'a + CmdOption,
+{
     question: &'a str,
-    options: &'a Vec<T>,
+    options: &'a [T],
 }
 
-impl<'a, T> Command<'a, T> where T: CmdOption {
+impl<'a, T> Command<'a, T>
+where
+    T: CmdOption,
+{
     /// # Panics
     ///
     /// When list of options is empty.
-    pub fn new(question: &'a str, options: &'a Vec<T>) -> Self {
+    pub fn new(question: &'a str, options: &'a [T]) -> Self {
         if options.is_empty() {
             panic!("Got empty list of options.");
         }
 
-        Command {
-            question: question,
-            options: options,
-        }
+        Command { question, options }
     }
 
     fn prompt(&self) -> String {
@@ -99,7 +102,7 @@ impl<'a, T> Command<'a, T> where T: CmdOption {
 enum ParsingResult<T> {
     Help,
     Option(T),
-    Err
+    Err,
 }
 
 /// Print question to standard output and read answer from standard input.
@@ -110,33 +113,31 @@ enum ParsingResult<T> {
 /// User didn't give a valid answer.
 pub fn prompt<'a, T>(command: &'a Command<'a, T>) -> Result<&'a T, ()>
 where
-    T: CmdOption
+    T: CmdOption,
 {
     let mut attempts = 0;
     loop {
         let mut out = io::stdout();
 
-        out.write(command.prompt().as_bytes()).unwrap();
+        out.write_all(command.prompt().as_bytes()).unwrap();
         out.flush().unwrap();
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
         match command.parse(&input) {
-            ParsingResult::Help => {},
+            ParsingResult::Help => {}
             ParsingResult::Option(option) => {
                 return Ok(option);
-            },
-            ParsingResult::Err => {
-                attempts += 1
             }
+            ParsingResult::Err => attempts += 1,
         }
 
         if attempts >= 2 {
             break;
         }
 
-        out.write(command.help().as_bytes()).unwrap();
+        out.write_all(command.help().as_bytes()).unwrap();
         out.flush().unwrap();
     }
 

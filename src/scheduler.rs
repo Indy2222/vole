@@ -1,4 +1,4 @@
-// Source Code, Copyright (C) 2018  Martin Indra
+// Source Code, Copyright (C) 2018, 2019  Martin Indra
 // Algorithm SM-2, (C) Copyright SuperMemo World, 1991.
 //
 // This file is part of VoLe.
@@ -25,13 +25,13 @@
 //    http://www.supermemo.com
 //    http://www.supermemo.eu
 
-use card::Card;
-use chrono::{Duration, NaiveDate, prelude::*};
-use file::get_vole_dir;
+use crate::card::Card;
+use crate::file::get_vole_dir;
+use chrono::{prelude::*, Duration, NaiveDate};
 use fnv::FnvHashMap;
 use std::collections::VecDeque;
 use std::fs::{rename, File};
-use std::io::{Write, ErrorKind, BufReader, BufRead};
+use std::io::{BufRead, BufReader, ErrorKind, Write};
 
 const SCHEDULE_FILE_NAME: &str = "schedule.txt";
 
@@ -71,12 +71,14 @@ impl ScheduleItem {
     fn serialize(&self, id: u64) -> String {
         let last_revisit = self.last_revisit.format("%Y-%m-%d");
         let next_revisit = self.next_revisit.format("%Y-%m-%d");
-        format!("{id}\t{next_revisit}\t{last_revisit}\t{iteration}\t{ef}\n",
-                id=Card::serialize_id(id),
-                next_revisit=next_revisit,
-                last_revisit=last_revisit,
-                iteration=self.iteration,
-                ef=self.ef)
+        format!(
+            "{id}\t{next_revisit}\t{last_revisit}\t{iteration}\t{ef}\n",
+            id = Card::serialize_id(id),
+            next_revisit = next_revisit,
+            last_revisit = last_revisit,
+            iteration = self.iteration,
+            ef = self.ef
+        )
     }
 
     /// Parse `ScheduleItem` and its ID (hence the tuple) from a text line.
@@ -90,8 +92,7 @@ impl ScheduleItem {
 
         let parts: Vec<&str> = line.split('\t').collect();
         if parts.len() != 5 {
-            let reason = format!("Expected five TAB separated tokens, got: {}",
-                                 line);
+            let reason = format!("Expected five TAB separated tokens, got: {}", line);
             return Err(reason);
         }
 
@@ -114,10 +115,10 @@ impl ScheduleItem {
         };
 
         let item = ScheduleItem {
-            iteration: iteration,
-            ef: ef,
-            last_revisit: last_revisit,
-            next_revisit: next_revisit,
+            iteration,
+            ef,
+            last_revisit,
+            next_revisit,
         };
 
         Ok((id, item))
@@ -140,7 +141,7 @@ impl ScheduleItem {
 
     /// Schedule `self` n days to the future.
     fn reschedule(&mut self, days: u32) {
-        self.next_revisit = today() + Duration::days(days as i64);
+        self.next_revisit = today() + Duration::days(i64::from(days));
     }
 
     /// Recompute easiness factor based on user assessed easiness (0 - 5).
@@ -149,8 +150,8 @@ impl ScheduleItem {
             panic!("Invalid easiness assessment: {}.", q);
         }
 
-        let q = q as f32;
-        self.ef = self.ef -0.8 + 0.28 * q -0.02 * q * q;
+        let q = f32::from(q);
+        self.ef = self.ef - 0.8 + 0.28 * q - 0.02 * q * q;
         if self.ef < 1.3 {
             self.ef = 1.3;
         }
@@ -206,22 +207,30 @@ impl Schedule {
                 if let ErrorKind::NotFound = error.kind() {
                     return Ok(schedule);
                 }
-                let reason = format!("Couldn't open file \"{}\": {}",
-                                     path.to_string_lossy(), error);
+                let reason = format!(
+                    "Couldn't open file \"{}\": {}",
+                    path.to_string_lossy(),
+                    error
+                );
                 return Err(reason);
             }
         };
 
         let reader = BufReader::new(&file);
-        let numbered_lines = reader.lines().enumerate()
+        let numbered_lines = reader
+            .lines()
+            .enumerate()
             .map(|(i, result)| (i + 1, result));
 
         for (line_nr, result) in numbered_lines {
             let line = match result {
                 Ok(line) => line,
                 Err(error) => {
-                    let reason = format!("Couldn't read file \"{}\": {}",
-                                         path.to_string_lossy(), error);
+                    let reason = format!(
+                        "Couldn't read file \"{}\": {}",
+                        path.to_string_lossy(),
+                        error
+                    );
                     return Err(reason);
                 }
             };
@@ -254,8 +263,11 @@ impl Schedule {
             let mut file = match File::create(&tmp_path) {
                 Ok(file) => file,
                 Err(error) => {
-                    let reason = format!("Couldn't open file \"{}\": {}",
-                                         tmp_path.to_string_lossy(), error);
+                    let reason = format!(
+                        "Couldn't open file \"{}\": {}",
+                        tmp_path.to_string_lossy(),
+                        error
+                    );
                     return Err(reason);
                 }
             };
@@ -263,17 +275,23 @@ impl Schedule {
             for (id, item) in &self.items {
                 let line = item.serialize(*id);
                 if let Err(error) = file.write_all(line.as_bytes()) {
-                    let reason = format!("Couldn't append to file \"{}\": {}",
-                                         tmp_path.to_string_lossy(), error);
+                    let reason = format!(
+                        "Couldn't append to file \"{}\": {}",
+                        tmp_path.to_string_lossy(),
+                        error
+                    );
                     return Err(reason);
                 }
             }
         }
 
         if let Err(error) = rename(&tmp_path, &path) {
-            let reason = format!("Couldn't rename \"{}\" to \"{}\": {}",
-                                 tmp_path.to_string_lossy(),
-                                 path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't rename \"{}\" to \"{}\": {}",
+                tmp_path.to_string_lossy(),
+                path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
 
@@ -296,7 +314,7 @@ impl Schedule {
             panic!("Item with ID {} is already scheduled.", id);
         }
 
-        self.hot_stage.push_back(id.clone());
+        self.hot_stage.push_back(id);
         let item: ScheduleItem = Default::default();
         self.items.insert(id, item);
     }

@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use card::Card;
-use file::CardsReader;
+use crate::card::Card;
+use crate::file::CardsReader;
+use crate::scheduler::Schedule;
 use fnv::FnvHashMap;
-use scheduler::Schedule;
 use std::collections::VecDeque;
 
 pub struct Qa {
@@ -26,7 +26,6 @@ pub struct Qa {
     scheduled: FnvHashMap<u64, Card>,
     schedule: Schedule,
 }
-
 
 /// Question & Answer object consist of these parts:
 ///
@@ -45,7 +44,7 @@ impl Qa {
         let mut qa = Qa {
             queued: VecDeque::new(),
             scheduled: FnvHashMap::default(),
-            schedule: schedule,
+            schedule,
         };
 
         for card_result in reader {
@@ -73,7 +72,7 @@ impl Qa {
 
     /// Returns true if there is at least one card not yet scheduled.
     pub fn is_all_scheduled(&self) -> bool {
-        return self.queued.is_empty()
+        self.queued.is_empty()
     }
 
     /// Schedule `count` new cards for learning.
@@ -90,9 +89,9 @@ impl Qa {
     }
 
     /// Get "current" card.
-    pub fn current_card<'a>(&'a self) -> &'a Card {
+    pub fn current_card(&self) -> &Card {
         let item_id = self.schedule.current();
-        self.scheduled.get(&item_id).unwrap()
+        &self.scheduled[&item_id]
     }
 
     /// Assess "easiness" of current card and move current the next one.

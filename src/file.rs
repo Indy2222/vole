@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use std::env;
+use crate::card::Card;
+use dirs;
 use std::fs::{create_dir, File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::iter::Iterator;
-use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use card::Card;
 
 /// All VoLe files are place to a directory inside users home directory. This
 /// is name of the directory.
@@ -31,18 +31,17 @@ const CARDS_FILE_NAME: &str = "cards.txt";
 impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
-    pub fn to_line(&self) -> String {
+    fn to_line(&self) -> String {
         let id = Card::serialize_id(self.id());
         format!("{}\t{}\t{}\n", id, self.question(), self.answer())
     }
 
     /// Parse `Card` from a `&str` of a single line (ending with line-feed).
-    pub fn from_line(line: &str) -> Result<Card, String> {
+    fn from_line(line: &str) -> Result<Card, String> {
         let parts: Vec<&str> = line.trim().split('\t').collect();
 
         if parts.len() != 3 {
-            let reason = format!("Expected three TAB separated tokens, got: {}",
-                                 line);
+            let reason = format!("Expected three TAB separated tokens, got: {}", line);
             return Err(reason);
         }
 
@@ -53,26 +52,42 @@ impl Card {
     }
 }
 
-/// Append a `Card` into cards file. This opens cards wile in append mode and
-/// writes a single line to it.
-pub fn write_one(card: &Card) -> Result<(), String> {
+/// Append a slice `Card`-s into cards file. This opens cards wile in append
+/// mode and writes at the end of it.
+pub fn store_cards(cards: &[Card]) -> Result<(), String> {
     let cards_file_path = get_cards_file_path()?;
 
     let mut open_options = OpenOptions::new();
     open_options.append(true);
-    let mut file = match open_options.open(&cards_file_path) {
-        Ok(file) => file,
+    let mut writer = match open_options.open(&cards_file_path) {
+        Ok(file) => BufWriter::new(file),
         Err(error) => {
-            let reason = format!("Couldn't open file \"{}\": {}",
-                                 cards_file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't open file \"{}\": {}",
+                cards_file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     };
 
-    if let Err(error) = file.write_all(card.to_line().as_bytes()) {
-        let reason = format!("Couldn't append to file \"{}\": {}",
-                             cards_file_path.to_string_lossy(), error);
-        return Err(reason);
+    for card in cards {
+        if let Err(error) = writer.write_all(card.to_line().as_bytes()) {
+            let reason = format!(
+                "Couldn't append to file \"{}\": {}",
+                cards_file_path.to_string_lossy(),
+                error
+            );
+            return Err(reason);
+        }
+    }
+
+    if let Err(why) = writer.flush() {
+        return Err(format!(
+            "Couldn't append to file \"{}\": {}",
+            cards_file_path.to_string_lossy(),
+            why
+        ));
     }
 
     Ok(())
@@ -119,9 +134,8 @@ impl Iterator for CardsReader {
 pub fn read_cards() -> Result<CardsReader, String> {
     let cards_file_path = get_cards_file_path()?;
 
-    let file = File::open(&cards_file_path).map_err(|error| {
-        format!("Couldn't open card file: {}", error)
-    })?;
+    let file = File::open(&cards_file_path)
+        .map_err(|error| format!("Couldn't open card file: {}", error))?;
 
     Ok(CardsReader {
         error: false,
@@ -142,8 +156,11 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
     file_path.push(&CARDS_FILE_NAME);
     if !file_path.exists() {
         if let Err(error) = File::create(&file_path) {
-            let reason = format!("Couldn't create \"{}\" file: {}",
-                                 file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't create \"{}\" file: {}",
+                file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     }
@@ -151,8 +168,11 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
     Ok(file_path)
 }
 
+/// Get directory where VoLe configuration and other files are stored (possible
+/// deeper in the hierarchy). This function creates the directory if it doesn't
+/// exist.
 pub fn get_vole_dir() -> Result<PathBuf, String> {
-    let mut file_path = match env::home_dir() {
+    let mut file_path = match dirs::home_dir() {
         Some(path_buf) => path_buf,
         None => return Err("Couldn't locate home directory.".to_string()),
     };
@@ -160,8 +180,11 @@ pub fn get_vole_dir() -> Result<PathBuf, String> {
     file_path.push(&VOLE_DIR_NAME);
     if !file_path.exists() {
         if let Err(error) = create_dir(&file_path) {
-            let reason = format!("Couldn't create \"{}\" directory: {}",
-                                 file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't create \"{}\" directory: {}",
+                file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     }

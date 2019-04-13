@@ -1,4 +1,4 @@
-// Copyright (C) 2018  Martin Indra
+// Copyright (C) 2018, 2019  Martin Indra
 //
 // This file is part of VoLe.
 //
@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-use file::read_cards;
-use prompt::{self, Command, CmdOption};
-use qa::Qa;
+use crate::file::read_cards;
+use crate::prompt::{self, CmdOption, Command};
+use crate::qa::Qa;
 
 #[derive(PartialEq, Clone)]
 enum UserAction {
@@ -32,7 +32,6 @@ struct LoopOption {
     doc: String,
     action: UserAction,
 }
-
 
 impl CmdOption for LoopOption {
     fn letter(&self) -> char {
@@ -52,16 +51,34 @@ struct AssessmentOption {
 lazy_static! {
     static ref ASSESSMENTS: Vec<AssessmentOption> = {
         vec![
-            AssessmentOption {q: 0, doc: "complete blackout"},
-            AssessmentOption {q: 1, doc: "incorrect response; the correct one \
-                                          remembered"},
-            AssessmentOption {q: 2, doc: "incorrect response; where the \
-                                          correct one seemed easy to recall"},
-            AssessmentOption {q: 3, doc: "correct response recalled with \
-                                          serious difficulty"},
-            AssessmentOption {q: 4, doc: "correct response after a \
-                                          hesitation"},
-            AssessmentOption {q: 5, doc: "perfect response"},
+            AssessmentOption {
+                q: 0,
+                doc: "complete blackout",
+            },
+            AssessmentOption {
+                q: 1,
+                doc: "incorrect response; the correct one \
+                      remembered",
+            },
+            AssessmentOption {
+                q: 2,
+                doc: "incorrect response; where the \
+                      correct one seemed easy to recall",
+            },
+            AssessmentOption {
+                q: 3,
+                doc: "correct response recalled with \
+                      serious difficulty",
+            },
+            AssessmentOption {
+                q: 4,
+                doc: "correct response after a \
+                      hesitation",
+            },
+            AssessmentOption {
+                q: 5,
+                doc: "perfect response",
+            },
         ]
     };
 }
@@ -75,7 +92,6 @@ impl CmdOption for AssessmentOption {
         self.doc
     }
 }
-
 
 /// Start question answer loop. Questions, answers and options are printed to
 /// standard output and user commands are read from standard input. The loop
@@ -93,7 +109,7 @@ pub fn learning_loop() -> Result<(), String> {
     }
 
     qa.save()?;
-    return Ok(())
+    Ok(())
 }
 
 fn iteration(qa: &mut Qa) -> UserAction {
@@ -105,12 +121,15 @@ fn iteration(qa: &mut Qa) -> UserAction {
 }
 
 fn read_option(command: &Command<LoopOption>) -> UserAction {
-    prompt::prompt(&command).expect("Invalid option.").action.clone()
+    prompt::prompt(&command)
+        .expect("Invalid option.")
+        .action
+        .clone()
 }
 
 fn show_card(qa: &mut Qa) -> UserAction {
     let yes = LoopOption {
-        letter:'y',
+        letter: 'y',
         doc: "yes".to_string(),
         action: UserAction::Continue,
     };
@@ -147,7 +166,7 @@ fn ask_for_more(qa: &Qa) -> UserAction {
     }
 
     let yes = LoopOption {
-        letter:'y',
+        letter: 'y',
         doc: "yes".to_string(),
         action: UserAction::AddMore,
     };
@@ -158,8 +177,6 @@ fn ask_for_more(qa: &Qa) -> UserAction {
     };
 
     let options = vec![yes, quit];
-    let command = Command::new("No more items planned for today, add more",
-                               &options);
-    return read_option(&command);
+    let command = Command::new("No more items planned for today, add more", &options);
+    read_option(&command)
 }
-
