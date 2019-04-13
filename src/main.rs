@@ -20,6 +20,7 @@ extern crate rand;
 extern crate vole;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use regex::{self, Regex};
 use std::process;
 use vole::{card::Card, file, learn};
 
@@ -33,20 +34,35 @@ fn main() {
         .subcommand(
             SubCommand::with_name("add")
                 .about("Stores a new flashcard.")
+                .arg(
+                    Arg::with_name("bidir")
+                        .long("bidirectional")
+                        .short("b")
+                        .help(
+                            "Stores a card bidirectionally, id est two \
+                             versions with answer and question swapped.",
+                        ),
+                )
                 .arg(Arg::with_name("question").required(true))
                 .arg(Arg::with_name("answer").required(true)),
         )
         .subcommand(
-            SubCommand::with_name("biadd")
-                .about(
-                    "Stores a card bidirectionally, i.e. two versions with \
-                     answer and question swapped.",
-                )
-                .arg(Arg::with_name("variant-a").required(true))
-                .arg(Arg::with_name("variant-b").required(true)),
+            SubCommand::with_name("learn").about("Starts question and answer learning loop."),
         )
         .subcommand(
-            SubCommand::with_name("learn").about("Starts question and answer learning loop."),
+            SubCommand::with_name("find")
+                .about(
+                    "Searches all questions and answers with a regular \
+                     expression and prints all matching cards.",
+                )
+                .arg(
+                    Arg::with_name("regex")
+                        .help(
+                            "A matching regular expression with syntax \
+                             documented at https://docs.rs/regex/1/regex/#syntax",
+                        )
+                        .required(true),
+                ),
         );
 
     let matches = app.get_matches();
@@ -60,17 +76,42 @@ fn execute(matches: ArgMatches) -> Result<(), String> {
     if let Some(matches) = matches.subcommand_matches("add") {
         let question = matches.value_of("question").unwrap();
         let answer = matches.value_of("answer").unwrap();
-        return add(&[(question, answer)]);
+
+        return if matches.is_present("bidir") {
+            add(&[(question, answer), (answer, question)])
+        } else {
+            add(&[(question, answer)])
+        };
     }
 
-    if let Some(matches) = matches.subcommand_matches("biadd") {
-        let variant_a = matches.value_of("variant-a").unwrap();
-        let variant_b = matches.value_of("variant-b").unwrap();
-        return add(&[(variant_a, variant_b), (variant_b, variant_a)]);
+    if let Some(matches) = matches.subcommand_matches("find") {
+        let regexp = matches.value_of("regex").unwrap();
+        return find(regexp);
     }
 
     matches.subcommand_matches("learn").unwrap();
     learn::learning_loop()?;
+    Ok(())
+}
+
+fn find(regex: &str) -> Result<(), String> {
+    let regex = match Regex::new(regex) {
+        Ok(regex) => regex,
+        Err(why) => return Err(format!("Invalid regex: {}", why)),
+    };
+
+    let reader = file::read_cards()?;
+    for card in reader {
+        let card = match card {
+            Ok(card) => card,
+            Err(why) => return Err(why),
+        };
+        if !regex.is_match(card.question()) && !regex.is_match(card.answer()) {
+            continue;
+        }
+        print!("{}", card.to_line());
+    }
+
     Ok(())
 }
 

@@ -31,7 +31,7 @@ const CARDS_FILE_NAME: &str = "cards.txt";
 impl Card {
     /// Serialize `Card` to a `String` of a single line; with line-feed at the
     /// end.
-    fn to_line(&self) -> String {
+    pub fn to_line(&self) -> String {
         let id = Card::serialize_id(self.id());
         format!("{}\t{}\t{}\n", id, self.question(), self.answer())
     }
