@@ -41,8 +41,7 @@ impl Card {
         let parts: Vec<&str> = line.trim().split('\t').collect();
 
         if parts.len() != 3 {
-            let reason = format!("Expected three TAB separated tokens, got: {}",
-                                 line);
+            let reason = format!("Expected three TAB separated tokens, got: {}", line);
             return Err(reason);
         }
 
@@ -63,15 +62,21 @@ pub fn write_one(card: &Card) -> Result<(), String> {
     let mut file = match open_options.open(&cards_file_path) {
         Ok(file) => file,
         Err(error) => {
-            let reason = format!("Couldn't open file \"{}\": {}",
-                                 cards_file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't open file \"{}\": {}",
+                cards_file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     };
 
     if let Err(error) = file.write_all(card.to_line().as_bytes()) {
-        let reason = format!("Couldn't append to file \"{}\": {}",
-                             cards_file_path.to_string_lossy(), error);
+        let reason = format!(
+            "Couldn't append to file \"{}\": {}",
+            cards_file_path.to_string_lossy(),
+            error
+        );
         return Err(reason);
     }
 
@@ -119,9 +124,8 @@ impl Iterator for CardsReader {
 pub fn read_cards() -> Result<CardsReader, String> {
     let cards_file_path = get_cards_file_path()?;
 
-    let file = File::open(&cards_file_path).map_err(|error| {
-        format!("Couldn't open card file: {}", error)
-    })?;
+    let file = File::open(&cards_file_path)
+        .map_err(|error| format!("Couldn't open card file: {}", error))?;
 
     Ok(CardsReader {
         error: false,
@@ -142,8 +146,11 @@ fn get_cards_file_path() -> Result<PathBuf, String> {
     file_path.push(&CARDS_FILE_NAME);
     if !file_path.exists() {
         if let Err(error) = File::create(&file_path) {
-            let reason = format!("Couldn't create \"{}\" file: {}",
-                                 file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't create \"{}\" file: {}",
+                file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     }
@@ -160,8 +167,11 @@ pub fn get_vole_dir() -> Result<PathBuf, String> {
     file_path.push(&VOLE_DIR_NAME);
     if !file_path.exists() {
         if let Err(error) = create_dir(&file_path) {
-            let reason = format!("Couldn't create \"{}\" directory: {}",
-                                 file_path.to_string_lossy(), error);
+            let reason = format!(
+                "Couldn't create \"{}\" directory: {}",
+                file_path.to_string_lossy(),
+                error
+            );
             return Err(reason);
         }
     }

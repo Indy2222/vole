@@ -19,12 +19,13 @@ extern crate clap;
 extern crate rand;
 extern crate vole;
 
-use clap::{Arg, ArgMatches, App, SubCommand};
+use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
-use vole::{file, card, learn};
+use vole::{card, file, learn};
 
 fn main() {
-    let mut app = App::new("VoLe").version("0.1.0")
+    let mut app = App::new("VoLe")
+        .version("0.1.0")
         .author("Martin Indra <martin.indra@mgn.cz>")
         .about("CLI for flashcard learning");
 
@@ -32,19 +33,23 @@ fn main() {
     let answer_arg = Arg::with_name("answer").required(true);
     let add_sub_command = SubCommand::with_name("add")
         .about("Stores a new flashcard.")
-        .arg(question_arg).arg(answer_arg);
+        .arg(question_arg)
+        .arg(answer_arg);
     app = app.subcommand(add_sub_command);
 
     let variant_a_arg = Arg::with_name("variant-a").required(true);
     let variant_b_arg = Arg::with_name("variant-b").required(true);
     let biadd_sub_command = SubCommand::with_name("biadd")
-        .about("Stores a card bidirectionally, i.e. two versions with answer \
-                and question swapped.")
-        .arg(variant_a_arg).arg(variant_b_arg);
+        .about(
+            "Stores a card bidirectionally, i.e. two versions with answer \
+             and question swapped.",
+        )
+        .arg(variant_a_arg)
+        .arg(variant_b_arg);
     app = app.subcommand(biadd_sub_command);
 
-    let learn_sub_command = SubCommand::with_name("learn")
-        .about("Starts question and answer learning loop.");
+    let learn_sub_command =
+        SubCommand::with_name("learn").about("Starts question and answer learning loop.");
     app = app.subcommand(learn_sub_command);
 
     let matches = app.get_matches();
@@ -84,7 +89,6 @@ fn add(question: &str, answer: &str) -> Result<(), String> {
         None => 0,
     };
 
-    let card = card::Card::new(
-        id, question.to_string(), answer.to_string());
+    let card = card::Card::new(id, question.to_string(), answer.to_string());
     file::write_one(&card)
 }

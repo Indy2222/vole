@@ -23,8 +23,7 @@ pub struct Card {
 
 impl Card {
     pub fn parse_id(id: &str) -> Result<u64, String> {
-        u64::from_str_radix(id, 16)
-            .map_err(|r| format!("Failed to parse ID: {}", r))
+        u64::from_str_radix(id, 16).map_err(|r| format!("Failed to parse ID: {}", r))
     }
 
     pub fn serialize_id(id: u64) -> String {

@@ -33,12 +33,18 @@ pub trait CmdOption {
     }
 }
 
-pub struct Command<'a, T> where T: 'a + CmdOption {
+pub struct Command<'a, T>
+where
+    T: 'a + CmdOption,
+{
     question: &'a str,
     options: &'a Vec<T>,
 }
 
-impl<'a, T> Command<'a, T> where T: CmdOption {
+impl<'a, T> Command<'a, T>
+where
+    T: CmdOption,
+{
     /// # Panics
     ///
     /// When list of options is empty.
@@ -99,7 +105,7 @@ impl<'a, T> Command<'a, T> where T: CmdOption {
 enum ParsingResult<T> {
     Help,
     Option(T),
-    Err
+    Err,
 }
 
 /// Print question to standard output and read answer from standard input.
@@ -110,7 +116,7 @@ enum ParsingResult<T> {
 /// User didn't give a valid answer.
 pub fn prompt<'a, T>(command: &'a Command<'a, T>) -> Result<&'a T, ()>
 where
-    T: CmdOption
+    T: CmdOption,
 {
     let mut attempts = 0;
     loop {
@@ -123,13 +129,11 @@ where
         io::stdin().read_line(&mut input).unwrap();
 
         match command.parse(&input) {
-            ParsingResult::Help => {},
+            ParsingResult::Help => {}
             ParsingResult::Option(option) => {
                 return Ok(option);
-            },
-            ParsingResult::Err => {
-                attempts += 1
             }
+            ParsingResult::Err => attempts += 1,
         }
 
         if attempts >= 2 {

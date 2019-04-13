@@ -27,7 +27,6 @@ pub struct Qa {
     schedule: Schedule,
 }
 
-
 /// Question & Answer object consist of these parts:
 ///
 /// * A spaced repetition learning scheduler. User can:
@@ -73,7 +72,7 @@ impl Qa {
 
     /// Returns true if there is at least one card not yet scheduled.
     pub fn is_all_scheduled(&self) -> bool {
-        return self.queued.is_empty()
+        return self.queued.is_empty();
     }
 
     /// Schedule `count` new cards for learning.
